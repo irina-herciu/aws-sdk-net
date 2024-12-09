@@ -93,7 +93,7 @@ namespace <#=this.Config.Namespace #>.Model.Internal.MarshallTransformations
 	if (this.Operation.RequestHasBodyMembers || shouldMarshallPayload)
 	{
 #>
-#if NETCOREAPP3_1_OR_GREATER
+#if !NETFRAMEWORK
 			ArrayPoolBufferWriter<byte> arrayPoolBufferWriter = new ArrayPoolBufferWriter<byte>();
 			using Utf8JsonWriter writer = new Utf8JsonWriter(arrayPoolBufferWriter);
 #else
@@ -124,10 +124,9 @@ namespace <#=this.Config.Namespace #>.Model.Internal.MarshallTransformations
 <#
 		}
 #>
-#if NETCOREAPP3_1_OR_GREATER
-			// attach to the request to properly dispose after request is made
-            request.ArrayPoolBufferWriter = arrayPoolBufferWriter;
-			request.ReadOnlyMemoryContent = arrayPoolBufferWriter.WrittenMemory;
+#if !NETFRAMEWORK
+			// ToArray() must be called here because aspects of sigv4 signing require a byte array
+			request.Content = arrayPoolBufferWriter.WrittenMemory.ToArray();
 #else
 			request.Content = memoryStream.ToArray();
 #endif
