@@ -15,7 +15,8 @@ using BitOperations = System.Numerics.BitOperations;
 #else
 using BitOperations = ThirdParty.RuntimeBackports.BitOperations;
 #endif
-namespace Amazon.Runtime.Internal.Util 
+#nullable enable
+namespace Amazon.Runtime.Internal.Util
 {
     /// <summary>
     /// Represents a heap-based, array-backed output sink into which <typeparamref name="T"/> data can be written.
@@ -94,8 +95,8 @@ namespace Amazon.Runtime.Internal.Util
             // the requested size is not valid, as that'll be thrown automatically
             // by the array pool in use when we try to rent an array with that size.
             this.pool = pool;
-            this.array = pool.Rent(initialCapacity);
-            this.index = 0;
+            array = pool.Rent(initialCapacity);
+            index = 0;
         }
 
         /// <inheritdoc/>
@@ -127,7 +128,7 @@ namespace Amazon.Runtime.Internal.Util
                     ThrowObjectDisposedException();
                 }
 
-                return array!.AsMemory(0, this.index);
+                return array!.AsMemory(0, index);
             }
         }
 
@@ -144,7 +145,7 @@ namespace Amazon.Runtime.Internal.Util
                     ThrowObjectDisposedException();
                 }
 
-                return array!.AsSpan(0, this.index);
+                return array!.AsSpan(0, index);
             }
         }
 
@@ -152,7 +153,7 @@ namespace Amazon.Runtime.Internal.Util
         public int WrittenCount
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => this.index;
+            get => index;
         }
 
         /// <inheritdoc/>
@@ -185,7 +186,7 @@ namespace Amazon.Runtime.Internal.Util
                     ThrowObjectDisposedException();
                 }
 
-                return array!.Length - this.index;
+                return array!.Length - index;
             }
         }
 
@@ -199,9 +200,9 @@ namespace Amazon.Runtime.Internal.Util
                 ThrowObjectDisposedException();
             }
 
-            array.AsSpan(0, this.index).Clear();
+            array.AsSpan(0, index).Clear();
 
-            this.index = 0;
+            index = 0;
         }
 
         /// <inheritdoc/>
@@ -219,12 +220,12 @@ namespace Amazon.Runtime.Internal.Util
                 ThrowArgumentOutOfRangeExceptionForNegativeCount();
             }
 
-            if (this.index > array!.Length - count)
+            if (index > array!.Length - count)
             {
                 ThrowArgumentExceptionForAdvancedTooFar();
             }
 
-            this.index += count;
+            index += count;
         }
 
         /// <inheritdoc/>
@@ -232,7 +233,7 @@ namespace Amazon.Runtime.Internal.Util
         {
             CheckBufferAndEnsureCapacity(sizeHint);
 
-            return this.array.AsMemory(this.index);
+            return array.AsMemory(index);
         }
 
         /// <inheritdoc/>
@@ -240,7 +241,7 @@ namespace Amazon.Runtime.Internal.Util
         {
             CheckBufferAndEnsureCapacity(sizeHint);
 
-            return this.array.AsSpan(this.index);
+            return array.AsSpan(index);
         }
 
         /// <summary>
@@ -264,7 +265,7 @@ namespace Amazon.Runtime.Internal.Util
                 ThrowObjectDisposedException();
             }
 
-            return new(array!, 0, this.index);
+            return new(array!, 0, index);
         }
 
         /// <inheritdoc/>
@@ -279,7 +280,7 @@ namespace Amazon.Runtime.Internal.Util
 
             this.array = null;
 
-            this.pool.Return(array);
+            pool.Return(array);
         }
 
         /// <inheritdoc/>
@@ -287,13 +288,13 @@ namespace Amazon.Runtime.Internal.Util
         {
             // See comments in MemoryOwner<T> about this
             if (typeof(T) == typeof(char) &&
-                this.array is char[] chars)
+                array is char[] chars)
             {
-                return new(chars, 0, this.index);
+                return new(chars, 0, index);
             }
 
             // Same representation used in Span<T>
-            return $"CommunityToolkit.HighPerformance.Buffers.ArrayPoolBufferWriter<{typeof(T)}>[{this.index}]";
+            return $"CommunityToolkit.HighPerformance.Buffers.ArrayPoolBufferWriter<{typeof(T)}>[{index}]";
         }
 
         /// <summary>
@@ -320,7 +321,7 @@ namespace Amazon.Runtime.Internal.Util
                 sizeHint = 1;
             }
 
-            if (sizeHint > array!.Length - this.index)
+            if (sizeHint > array!.Length - index)
             {
                 ResizeBuffer(sizeHint);
             }
@@ -333,7 +334,7 @@ namespace Amazon.Runtime.Internal.Util
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ResizeBuffer(int sizeHint)
         {
-            uint minimumSize = (uint)this.index + (uint)sizeHint;
+            uint minimumSize = (uint)index + (uint)sizeHint;
 
             // The ArrayPool<T> class has a maximum threshold of 1024 * 1024 for the maximum length of
             // pooled arrays, and once this is exceeded it will just allocate a new array every time
@@ -345,7 +346,7 @@ namespace Amazon.Runtime.Internal.Util
                 minimumSize = BitOperations.RoundUpToPowerOf2(minimumSize);
             }
 
-            this.pool.Resize(ref this.array, (int)minimumSize);
+            pool.Resize(ref array, (int)minimumSize);
         }
 
         /// <summary>

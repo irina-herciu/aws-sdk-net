@@ -94,8 +94,8 @@ namespace <#=this.Config.Namespace #>.Model.Internal.MarshallTransformations
 	{
 #>
 #if NETCOREAPP3_1_OR_GREATER
-			ArrayBufferWriter<byte> arrayBufferWriter = new ArrayBufferWriter<byte>();
-			using Utf8JsonWriter writer = new Utf8JsonWriter(arrayBufferWriter);
+			ArrayPoolBufferWriter<byte> arrayPoolBufferWriter = new ArrayPoolBufferWriter<byte>();
+			using Utf8JsonWriter writer = new Utf8JsonWriter(arrayPoolBufferWriter);
 #else
             using var memoryStream = new MemoryStream();
 			using Utf8JsonWriter writer = new Utf8JsonWriter(memoryStream);
@@ -125,7 +125,9 @@ namespace <#=this.Config.Namespace #>.Model.Internal.MarshallTransformations
 		}
 #>
 #if NETCOREAPP3_1_OR_GREATER
-            request.Content = arrayBufferWriter.WrittenMemory.ToArray();
+			// attach to the request to properly dispose after request is made
+            request.ArrayPoolBufferWriter = arrayPoolBufferWriter;
+			request.ReadOnlyMemoryContent = arrayPoolBufferWriter.WrittenMemory;
 #else
 			request.Content = memoryStream.ToArray();
 #endif
