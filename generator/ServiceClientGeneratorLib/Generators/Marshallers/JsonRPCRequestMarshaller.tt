@@ -124,9 +124,10 @@ namespace <#=this.Config.Namespace #>.Model.Internal.MarshallTransformations
 <#
 		}
 #>
-#if !NETFRAMEWORK
 			// ToArray() must be called here because aspects of sigv4 signing require a byte array
+#if !NETFRAMEWORK
 			request.Content = arrayPoolBufferWriter.WrittenMemory.ToArray();
+			request.ArrayPoolBufferWriter = arrayPoolBufferWriter;
 #else
 			request.Content = memoryStream.ToArray();
 #endif

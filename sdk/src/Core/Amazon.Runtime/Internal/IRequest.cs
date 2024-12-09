@@ -385,5 +385,9 @@ namespace Amazon.Runtime.Internal
         /// The time which the request was signed at.
         /// </summary>
         DateTime? SignedAt { get; set; }
+
+#if !NETFRAMEWORK
+        ArrayPoolBufferWriter<byte> ArrayPoolBufferWriter { get; set; }
+#endif
     }
 }

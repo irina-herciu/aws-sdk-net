@@ -98,6 +98,10 @@ namespace Amazon.Runtime.Internal
             {
                 if (httpRequest != null)
                     httpRequest.Dispose();
+#if !NETFRAMEWORK
+                if (executionContext.RequestContext.Request.ArrayPoolBufferWriter != null)
+                    executionContext.RequestContext.Request.ArrayPoolBufferWriter.Dispose();
+#endif
             }
         }
 
@@ -233,6 +237,10 @@ namespace Amazon.Runtime.Internal
             {
                 if (httpRequest != null)
                     httpRequest.Dispose();
+#if !NETFRAMEWORK
+                if (executionContext.RequestContext.Request.ArrayPoolBufferWriter != null)
+                    executionContext.RequestContext.Request.ArrayPoolBufferWriter.Dispose();
+#endif
             }
         }
 
