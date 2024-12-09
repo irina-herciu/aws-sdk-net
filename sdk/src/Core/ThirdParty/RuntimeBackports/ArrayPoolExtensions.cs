@@ -6,7 +6,7 @@
 using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
-
+#nullable enable
 namespace ThirdParty.RuntimeBackports
 {
     /// <summary>
@@ -24,7 +24,7 @@ namespace ThirdParty.RuntimeBackports
         /// <param name="clearArray">Indicates whether the contents of the array should be cleared before reuse.</param>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="newSize"/> is less than 0.</exception>
         /// <remarks>When this method returns, the caller must not use any references to the old array anymore.</remarks>
-        public static void Resize<T>(this ArrayPool<T> pool, [NotNull] ref T[]? array, int newSize, bool clearArray = false)
+        public static void Resize<T>(this ArrayPool<T> pool, ref T[]? array, int newSize, bool clearArray = false)
         {
             // If the old array is null, just create a new one with the requested size
             if (array is null)
@@ -66,7 +66,7 @@ namespace ThirdParty.RuntimeBackports
         /// <param name="clearArray">Indicates whether the contents of the array should be cleared if returned to the pool.</param>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="capacity"/> is less than 0.</exception>
         /// <remarks>When this method returns, the caller must not use any references to the old array anymore.</remarks>
-        public static void EnsureCapacity<T>(this ArrayPool<T> pool, [NotNull] ref T[]? array, int capacity, bool clearArray = false)
+        public static void EnsureCapacity<T>(this ArrayPool<T> pool, ref T[]? array, int capacity, bool clearArray = false)
         {
             if (capacity < 0)
             {
