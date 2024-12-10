@@ -10,6 +10,7 @@
 #>
 using System.Text.Json;
 using System.Buffers;
+using ThirdParty.RuntimeBackports;
 #pragma warning disable CS0612,CS0618
 namespace <#=this.Config.Namespace #>.Model.Internal.MarshallTransformations
 {
@@ -94,7 +95,7 @@ namespace <#=this.Config.Namespace #>.Model.Internal.MarshallTransformations
 	{
 #>
 #if !NETFRAMEWORK
-			ArrayPoolBufferWriter<byte> arrayPoolBufferWriter = new ArrayPoolBufferWriter<byte>();
+			using ArrayPoolBufferWriter<byte> arrayPoolBufferWriter = new ArrayPoolBufferWriter<byte>();
 			using Utf8JsonWriter writer = new Utf8JsonWriter(arrayPoolBufferWriter);
 #else
             using var memoryStream = new MemoryStream();
@@ -127,7 +128,6 @@ namespace <#=this.Config.Namespace #>.Model.Internal.MarshallTransformations
 			// ToArray() must be called here because aspects of sigv4 signing require a byte array
 #if !NETFRAMEWORK
 			request.Content = arrayPoolBufferWriter.WrittenMemory.ToArray();
-			request.ArrayPoolBufferWriter = arrayPoolBufferWriter;
 #else
 			request.Content = memoryStream.ToArray();
 #endif

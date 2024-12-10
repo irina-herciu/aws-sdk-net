@@ -56,9 +56,6 @@ namespace Amazon.Runtime.Internal
         RegionEndpoint alternateRegion;
         long originalStreamLength;
         DateTime? signedAt;
-#if !NETFRAMEWORK
-        ArrayPoolBufferWriter<byte> arrayPoolBufferWriter;
-#endif
 
         /// <summary>
         /// Constructs a new DefaultRequest with the specified service name and the
@@ -95,19 +92,6 @@ namespace Amazon.Runtime.Internal
             }
         }
 
-#if !NETFRAMEWORK
-        public ArrayPoolBufferWriter<byte> ArrayPoolBufferWriter
-        {
-            get
-            {
-                return arrayPoolBufferWriter;
-            }
-            set
-            {
-                this.arrayPoolBufferWriter = value;
-            }
-        }
-#endif
         /// <summary>
         /// The name of the request
         /// </summary>
