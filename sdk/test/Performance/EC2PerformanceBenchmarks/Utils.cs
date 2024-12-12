@@ -12,8 +12,6 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-using Amazon.S3;
-using Amazon.S3.Model;
 using ServiceClientGenerator;
 using System;
 using System.Collections.Generic;
@@ -26,57 +24,6 @@ namespace AWSSDK.Benchmarks
 {
     public static class Utils
     {
-        public static ServiceModel LoadServiceModel(string service)
-        {
-            string repoRoot = Directory.GetCurrentDirectory();
-            do
-            {
-                if (Directory.Exists(Path.Combine(repoRoot, "generator")))
-                {
-                    break;
-                }
-
-                var directoryInfo = Directory.GetParent(repoRoot);
-                repoRoot = directoryInfo != null ? directoryInfo.FullName : null;
-            } while (repoRoot != null);
-
-            string serviceModelDirectory = Path.Combine(repoRoot, "generator", "ServiceModels", service);
-
-            string modelPath = GetLatestModelPath(serviceModelDirectory);
-            string customizationsPath = Path.Combine(serviceModelDirectory, service + ".customizations.json");
-
-            using (var streamReader = new StreamReader(modelPath))
-            {
-                StreamReader customizationsReader = null;
-                if (File.Exists(customizationsPath))
-                {
-                    using (customizationsReader = new StreamReader(customizationsPath))
-                    {
-                        return new ServiceModel(streamReader, customizationsReader);
-                    }
-                }
-                return new ServiceModel(streamReader, null);
-            }
-        }
-
-        private static string GetLatestModelPath(string serviceDirectory)
-        {
-            string latestModelPath = "";
-            foreach (string modelName in Directory.GetFiles(serviceDirectory, "*.normal.json", SearchOption.TopDirectoryOnly))
-            {
-                if (string.Compare(latestModelPath, modelName) < 0)
-                {
-                    latestModelPath = modelName;
-                }
-            }
-
-            if (string.IsNullOrEmpty(latestModelPath))
-            {
-                throw new FileNotFoundException("Failed to find a model file in " + serviceDirectory);
-            }
-
-            return latestModelPath;
-        }
 
         public static Stream CreateStreamFromString(string s)
         {
@@ -87,7 +34,6 @@ namespace AWSSDK.Benchmarks
             stream.Position = 0;
             return stream;
         }
-
 
         public static Stream GetResourceStream(string resourceName)
         {
@@ -158,12 +104,6 @@ namespace AWSSDK.Benchmarks
                 stringBuilder.Append('A');
             }
             return stringBuilder.ToString();
-        }
-        public static async Task<string> CreateBucket(IAmazonS3 s3Client)
-        {
-            string bucketName = Constants.SdkTestPrefix + DateTime.Now.Ticks;
-            await s3Client.PutBucketAsync(new PutBucketRequest { BucketName = bucketName });
-            return bucketName;
         }
         public static void GenerateFile(string path, long size)
         {
