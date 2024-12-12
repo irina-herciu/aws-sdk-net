@@ -19,117 +19,207 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Amazon.DynamoDBv2.Model;
-using Amazon.DynamoDBv2.Model.Internal.MarshallTransformations;
-using Amazon.EC2.Model;
-using Amazon.EC2.Model.Internal.MarshallTransformations;
 using Amazon.Runtime.Internal.Transform;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using System.Text;
-using Amazon.S3;
-using Amazon.S3.Util;
 using Amazon;
-using Amazon.S3.Model;
 using System.Threading.Tasks;
 using System;
 using System.Diagnostics;
 using System.IO;
+using Amazon.SQS;
+using Amazon.SQS.Model;
+using Amazon.SQS.Model.Internal.MarshallTransformations;
+using System.Text.Json;
 namespace AWSSDK.Benchmarks
 {
+    [MemoryDiagnoser]
     public class MarshallAndUnmarshallBenchmarks
     {
-        PutItemRequest jsonRequest;
-        [GlobalSetup(Targets = new[] { nameof(MarshallJSON) })]
-        public void setupForMarshallJSON()
+        #region marshalling
+        private const string _sqsQueueUrl = "https://sqs.us-east-1.amazonaws.com/404186920727/LoadTestingQueue";
+        private SendMessageRequest _sendMessageRequest;
+
+        [GlobalSetup(Target = nameof(SQSSend100KBMessage))]
+        public void SQSSend100KBMessageSetup()
         {
-            jsonRequest = InstantiateClassGenerator.Execute<PutItemRequest>();
-        }
+            //create 100 KB message
 
-        /// <summary>
-        /// Test marshalling a DynamoDB PutItem request from object to JSON
-        /// </summary>
-        [Benchmark]
-        public void MarshallJSON()
-        {
-            var marshaller = new PutItemRequestMarshaller();
-            marshaller.Marshall(jsonRequest);
-        }
-
-        private UnmarshallerContext jsonResponseContext;
-        [GlobalSetup(Targets = new[] { nameof(UnmarshallJSON) })]
-        public void setupForUnmarshallJSON()
-        {
-            var service_model = Utils.LoadServiceModel("dynamodb");
-            var operation = service_model.FindOperation("PutItem");
-
-            var jsonResponse = new JsonSampleGenerator(service_model, operation.ResponseStructure).Execute();
-
-            var webResponse = new WebResponseData
+            var messageBody = Utils.CreateMessage(Constants.KiloSize * 100);
+            _sendMessageRequest = new SendMessageRequest
             {
-                Headers = {
-                    {"x-amzn-RequestId", Guid.NewGuid().ToString()},
-                    {"x-amz-crc32","0"}
-                }
+                QueueUrl = _sqsQueueUrl,
+                MessageBody = messageBody
             };
-            webResponse.Headers.Add("Content-Length", UTF8Encoding.UTF8.GetBytes(jsonResponse).Length.ToString());
-
-            jsonResponseContext = new JsonUnmarshallerContext(Utils.CreateStreamFromString(jsonResponse), false, webResponse);
         }
 
-
-        /// <summary>
-        /// Test unmarshalling a DynamoDB PutItem request from JSON to the response object
-        /// </summary>
         [Benchmark]
-        public void UnmarshallJSON()
+        public void SQSSend100KBMessage()
         {
-            PutItemResponseUnmarshaller.Instance.Unmarshall(jsonResponseContext);
+            SendMessageRequestMarshaller.Instance.Marshall(_sendMessageRequest);
         }
 
-        private RunInstancesRequest runInstancesRequest;
-
-        #region XML Marshall/Unmarshall
-        [GlobalSetup(Targets = new[] { nameof(MarshallXML) })]
-        public void setupForMarshallXML()
+        [GlobalSetup(Target = nameof(SQSSendMessage50KB))]
+        public void SQSSend50KBMessageSetup()
         {
-            runInstancesRequest = InstantiateClassGenerator.Execute<RunInstancesRequest>();
+            var messageBody = Utils.CreateMessage(Constants.KiloSize * 50);
+            _sendMessageRequest = new SendMessageRequest
+            {
+                QueueUrl = _sqsQueueUrl,
+                MessageBody = messageBody
+            };
         }
 
-
-        /// <summary>
-        /// Test marshalling an EC2 RunInstances request from the request object to XML
-        /// </summary>
         [Benchmark]
-        public void MarshallXML()
+        public void SQSSendMessage50KB()
         {
-            var marshaller = new RunInstancesRequestMarshaller();
-            marshaller.Marshall(runInstancesRequest);
+            SendMessageRequestMarshaller.Instance.Marshall(_sendMessageRequest);
         }
 
-
-        private string xmlResponse;
-        [GlobalSetup(Targets = new[] { nameof(UnmarshallXML) })]
-        public void setupForUnmarshallXML()
+        [GlobalSetup(Target = nameof(SQSSendMessage10KB))]
+        public void SQSSend10KBMessageSetup()
         {
-            var service_model = Utils.LoadServiceModel("ec2");
-            var operation = service_model.FindOperation("RunInstances");
-
-            xmlResponse = new XmlSampleGenerator(service_model, operation).Execute();
+            var messageBody = Utils.CreateMessage(Constants.KiloSize * 10);
+            _sendMessageRequest = new SendMessageRequest
+            {
+                QueueUrl = _sqsQueueUrl,
+                MessageBody = messageBody
+            };
         }
 
-        /// <summary>
-        /// Test unmarshalling an EC2 RunInstances response from XML to the response object
-        /// </summary>
         [Benchmark]
-        public void UnmarshallXML()
+        public void SQSSendMessage10KB()
         {
-            UnmarshallerContext context = new EC2UnmarshallerContext(Utils.CreateStreamFromString(xmlResponse), false, new WebResponseData());
-            var response = RunInstancesResponseUnmarshaller.Instance.Unmarshall(context)
-                as RunInstancesResponse;
+            SendMessageRequestMarshaller.Instance.Marshall(_sendMessageRequest);
+        }
+
+        [GlobalSetup(Target = nameof(SQSSendMessage250KB))]
+        public void SQSSend250KBMessageSetup()
+        {
+            var messageBody = Utils.CreateMessage(Constants.KiloSize * 250);
+            _sendMessageRequest = new SendMessageRequest
+            {
+                QueueUrl = _sqsQueueUrl,
+                MessageBody = messageBody,
+            };
+        }
+
+        [Benchmark]
+        public void SQSSendMessage250KB()
+        {
+            SendMessageRequestMarshaller.Instance.Marshall(_sendMessageRequest);
         }
         #endregion
 
+        #region unmarshalling
+        JsonUnmarshallerContext _context;
+        MemoryStream stream;
+
+        [GlobalSetup(Target = nameof(SQSSTJReceiveMessage10KB))]
+        public void SQSSTJReceiveMessage10KBSetup()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{\"Messages\":[{\"Body\":\"");
+            sb.Append(Utils.CreateMessage(Constants.KiloSize * 10));
+            sb.Append("\"}]}");
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
+            _context = new JsonUnmarshallerContext(stream, false, null);
+        }
+
+        [Benchmark]
+        public void SQSSTJReceiveMessage10KB()
+        {
+            ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
+            _context.Stream.Position = 0;
+        }
+
+        [GlobalSetup(Target = nameof(SQSSTJReceiveMessage100KB))]
+        public void SQSSTJReceiveMessage100KBSetup()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{\"Messages\":[{\"Body\":\"");
+            sb.Append(Utils.CreateMessage(Constants.KiloSize * 100));
+            sb.Append("\"}]}");
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
+            _context = new JsonUnmarshallerContext(stream, false, null);
+        }
+
+        [Benchmark]
+        public void SQSSTJReceiveMessage100KB()
+        {
+            ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
+            _context.Stream.Position = 0;
+        }
+
+        [GlobalSetup(Target = nameof(SQSSTJReceiveMessage250KB))]
+        public void SQSSTJReceiveMessage250KBSetup()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{\"Messages\":[{\"Body\":\"");
+            sb.Append(Utils.CreateMessage(Constants.KiloSize * 250));
+            sb.Append("\"}]}");
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
+            _context = new JsonUnmarshallerContext(stream, false, null);
+        }
+
+        [Benchmark]
+        public void SQSSTJReceiveMessage250KB()
+        {
+            ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
+            _context.Stream.Position = 0;
+        }
+
+        // v4-dev has a different coding pattern, the stream is created inside the unmarshallercontext
+
+        [GlobalSetup(Target = nameof(V4DevReceiveMessage10KB))]
+        public void V4DevReceiveMessage10KBSetup()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{\"Messages\":[{\"Body\":\"");
+            sb.Append(Utils.CreateMessage(Constants.KiloSize * 10));
+            sb.Append("\"}]}");
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
+        }
+
+        [Benchmark]
+        public void V4DevReceiveMessage10KB()
+        {
+            _context = new JsonUnmarshallerContext(stream, false, null);
+        }
+
+        [GlobalSetup(Target = nameof(V4DevReceiveMessage100KB))]
+        public void V4DevReceiveMessage100KBSetup()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{\"Messages\":[{\"Body\":\"");
+            sb.Append(Utils.CreateMessage(Constants.KiloSize * 100));
+            sb.Append("\"}]}");
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
+        }
+
+        [Benchmark]
+        public void V4DevReceiveMessage100KB()
+        {
+            _context = new JsonUnmarshallerContext(stream, false, null);
+        }
+
+        [GlobalSetup(Target = nameof(V4DevReceiveMessage250KB))]
+        public void V4DevReceiveMessage250KBSetup()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{\"Messages\":[{\"Body\":\"");
+            sb.Append(Utils.CreateMessage(Constants.KiloSize * 250));
+            sb.Append("\"}]}");
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
+        }
+
+        [Benchmark]
+        public void V4DevReceiveMessage250KB()
+        {
+            _context = new JsonUnmarshallerContext(stream, false, null);
+        }
+    #endregion
     }
 }
