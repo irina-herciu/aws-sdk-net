@@ -116,6 +116,7 @@ namespace AWSSDK.Benchmarks
         #region unmarshalling
         JsonUnmarshallerContext _context;
         MemoryStream stream;
+        string payload;
 
         [GlobalSetup(Target = nameof(SQSSTJReceiveMessage10KB))]
         public void SQSSTJReceiveMessage10KBSetup()
@@ -124,13 +125,14 @@ namespace AWSSDK.Benchmarks
             sb.Append("{\"Messages\":[{\"Body\":\"");
             sb.Append(Utils.CreateMessage(Constants.KiloSize * 10));
             sb.Append("\"}]}");
-            stream = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
-            _context = new JsonUnmarshallerContext(stream, false, null);
+            payload = sb.ToString();
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(payload));
         }
 
         [Benchmark]
         public void SQSSTJReceiveMessage10KB()
         {
+            _context = new JsonUnmarshallerContext(stream, false, null);
             ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
             _context.Stream.Position = 0;
         }
@@ -142,13 +144,14 @@ namespace AWSSDK.Benchmarks
             sb.Append("{\"Messages\":[{\"Body\":\"");
             sb.Append(Utils.CreateMessage(Constants.KiloSize * 100));
             sb.Append("\"}]}");
-            stream = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
-            _context = new JsonUnmarshallerContext(stream, false, null);
+            payload = sb.ToString();
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(payload));
         }
 
         [Benchmark]
         public void SQSSTJReceiveMessage100KB()
         {
+            _context = new JsonUnmarshallerContext(stream, false, null);
             ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
             _context.Stream.Position = 0;
         }
@@ -160,13 +163,14 @@ namespace AWSSDK.Benchmarks
             sb.Append("{\"Messages\":[{\"Body\":\"");
             sb.Append(Utils.CreateMessage(Constants.KiloSize * 250));
             sb.Append("\"}]}");
-            stream = new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString()));
-            _context = new JsonUnmarshallerContext(stream, false, null);
+            payload = sb.ToString();
+            stream = new MemoryStream(Encoding.UTF8.GetBytes(payload));
         }
 
         [Benchmark]
         public void SQSSTJReceiveMessage250KB()
         {
+            _context = new JsonUnmarshallerContext(stream, false, null);
             ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
             _context.Stream.Position = 0;
         }
@@ -187,6 +191,7 @@ namespace AWSSDK.Benchmarks
         public void V4DevReceiveMessage10KB()
         {
             _context = new JsonUnmarshallerContext(stream, false, null);
+            ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
         }
 
         [GlobalSetup(Target = nameof(V4DevReceiveMessage100KB))]
@@ -203,6 +208,7 @@ namespace AWSSDK.Benchmarks
         public void V4DevReceiveMessage100KB()
         {
             _context = new JsonUnmarshallerContext(stream, false, null);
+            ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
         }
 
         [GlobalSetup(Target = nameof(V4DevReceiveMessage250KB))]
@@ -219,6 +225,7 @@ namespace AWSSDK.Benchmarks
         public void V4DevReceiveMessage250KB()
         {
             _context = new JsonUnmarshallerContext(stream, false, null);
+            ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
         }
     #endregion
     }
