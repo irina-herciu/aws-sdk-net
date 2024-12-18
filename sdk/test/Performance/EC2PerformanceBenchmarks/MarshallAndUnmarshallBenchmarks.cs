@@ -192,6 +192,7 @@ namespace AWSSDK.Benchmarks
         {
             _context = new JsonUnmarshallerContext(stream, false, null);
             ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
+            stream.Position = 0;
         }
 
         [GlobalSetup(Target = nameof(V4DevReceiveMessage100KB))]
@@ -209,6 +210,7 @@ namespace AWSSDK.Benchmarks
         {
             _context = new JsonUnmarshallerContext(stream, false, null);
             ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
+            stream.Position = 0;
         }
 
         [GlobalSetup(Target = nameof(V4DevReceiveMessage250KB))]
@@ -226,6 +228,7 @@ namespace AWSSDK.Benchmarks
         {
             _context = new JsonUnmarshallerContext(stream, false, null);
             ReceiveMessageResponseUnmarshaller.Instance.Unmarshall(_context);
+            stream.Position = 0;
         }
     #endregion
     }
