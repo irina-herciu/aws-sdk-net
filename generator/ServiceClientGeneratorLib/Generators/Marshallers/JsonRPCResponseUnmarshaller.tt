@@ -98,6 +98,7 @@ namespace <#=this.Config.Namespace #>.Model.Internal.MarshallTransformations
 		else if (this.IsWrapped)
 		{
 #>
+            StreamingUtf8JsonReader reader = new StreamingUtf8JsonReader(context.Stream);
 			response.<#=this.WrappedResultMember#> = <#=this.Structure.Name#>Unmarshaller.Instance.Unmarshall(context, ref reader);
 <#
 		}
