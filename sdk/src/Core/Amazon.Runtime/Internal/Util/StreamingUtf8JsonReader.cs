@@ -74,7 +74,7 @@ namespace Amazon.Runtime.Internal.Util
             int utf8BomLength = JsonConstants.Utf8Bom.Length;
             Debug.Assert(_buffer.Length >= utf8BomLength);
 
-            int bytesRead = _stream.Read(_buffer, 0, _buffer.Length);
+            int bytesRead = FillBuffer(stream, ref _buffer,0, _buffer.Length);
             int start = 0;
             if (_buffer.AsSpan().StartsWith(JsonConstants.Utf8Bom))
             {
@@ -114,6 +114,8 @@ namespace Amazon.Runtime.Internal.Util
         {
             int bytesRead = 0;
             ReadOnlySpan<byte> leftover = buffer.AsSpan().Slice((int)reader.BytesConsumed);
+            var data = Encoding.UTF8.GetString(buffer);
+            Console.WriteLine(data);
             if (reader.BytesConsumed < buffer.Length)
             {
                 // If BytesConsumed is 0 that means that the previous Read failed because the JSON token was too large to fit in the buffer.
