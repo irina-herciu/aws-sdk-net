@@ -265,12 +265,17 @@ namespace Amazon.Runtime.Internal.Transform
                 case JsonTokenType.Null:
                     text = null;
                     break;
-                // GetString(), GetBoolean() etc allocates a new string each time, so it is better to grab the raw value
-                // For numbers we also grab the raw value b/c we don't want to lose precision.
                 case JsonTokenType.True:
                 case JsonTokenType.False:
+                    text = reader.Reader.GetBoolean().ToString();
+                    break;
                 case JsonTokenType.PropertyName:
+                    text = reader.Reader.GetString();
+                    break;
                 case JsonTokenType.String:
+                    text = reader.Reader.GetString();
+                    break;
+                // For numbers we grab the raw value b/c we don't want to lose precision.
                 case JsonTokenType.Number:
 #if NETSTANDARD2_0 || NETFRAMEWORK
                     // overload which accepts a ReadOnlySpan<byte> is only available in netstandard2.1 and netcore2.1+
