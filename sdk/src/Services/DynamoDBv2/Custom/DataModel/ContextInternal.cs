@@ -681,7 +681,8 @@ namespace Amazon.DynamoDBv2.DataModel
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067",
             Justification = "The user's type has been annotated with InternalConstants.DataModelModeledType with the public API into the library. At this point the type will not be trimmed.")]
-        private bool TryToMap(object value, [DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] Type type, DynamoDBFlatConfig flatConfig, Dictionary<string, Type> derivedTypeKeysDictionary, out Document output)
+        private bool TryToMap(object value, [DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] Type type, DynamoDBFlatConfig flatConfig,
+            Dictionary<Type, string> derivedTypesDictionary, out Document output)
         {
             output = null;
 
@@ -714,7 +715,8 @@ namespace Amazon.DynamoDBv2.DataModel
             return true;
         }
 
-        private bool TryToList(object value, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type, DynamoDBFlatConfig flatConfig, Dictionary<string, Type> derivedTypeKeysDictionary, out DynamoDBList output)
+        private bool TryToList(object value, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type, DynamoDBFlatConfig flatConfig,
+            Dictionary<Type, string> derivedTypesDictionary, out DynamoDBList output)
         {
             if (!Utils.ImplementsInterface(type, typeof(ICollection<>)))
             {
@@ -828,7 +830,7 @@ namespace Amazon.DynamoDBv2.DataModel
         /// Serializes a given value to Document
         /// Use only for property conversions, not for full item conversion
         /// </summary>
-        private Document SerializeToDocument(object value, [DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] Type type, DynamoDBFlatConfig flatConfig, Dictionary<string, Type> derivedTypeKeysDictionary)
+        private Document SerializeToDocument(object value, [DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] Type type, DynamoDBFlatConfig flatConfig, string typeDiscriminator)
         {
             ItemStorageConfig config = StorageConfigCache.GetConfig(type, flatConfig, conversionOnly: true);
             var itemStorage = ObjectToItemStorageHelper(value, config, flatConfig, keysOnly: false, ignoreNullValues: flatConfig.IgnoreNullValues.Value);

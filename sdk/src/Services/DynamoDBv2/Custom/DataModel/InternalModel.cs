@@ -78,18 +78,18 @@ namespace Amazon.DynamoDBv2.DataModel
             PropertyName = member.Name;
         }
 
-        public SimplePropertyStorage([DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)]Type memberType)
+        public SimplePropertyStorage([DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] Type memberType)
         {
             MemberType = memberType;
             DerivedTypesDictionary = new Dictionary<Type, string>();
             DerivedTypeKeysDictionary = new Dictionary<string,Type>();
         }
-        public SimplePropertyStorage(Type memberType, Dictionary<Type, string> derivedTypesDictionary)
+        public SimplePropertyStorage([DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] Type memberType, Dictionary<Type, string> derivedTypesDictionary)
         {
             MemberType = memberType;
             DerivedTypesDictionary = derivedTypesDictionary;
         }
-        public SimplePropertyStorage(Type memberType, Dictionary<string, Type> derivedTypeKeysDictionary)
+        public SimplePropertyStorage([DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] Type memberType, Dictionary<string, Type> derivedTypeKeysDictionary)
         {
             MemberType = memberType;
             DerivedTypeKeysDictionary = derivedTypeKeysDictionary;

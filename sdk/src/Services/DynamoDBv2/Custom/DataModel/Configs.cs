@@ -440,7 +440,7 @@ namespace Amazon.DynamoDBv2.DataModel
             List<ScanCondition> queryFilter = operationConfig.QueryFilter ?? new List<ScanCondition>();
             ConditionalOperatorValues conditionalOperator = operationConfig.ConditionalOperator;
             string derivedTypeAttributeName =
-                !string.IsNullOrEmpty(operationConfig.DerivedTypeAttributeName) ? operationConfig.DerivedTypeAttributeName :
+                //!string.IsNullOrEmpty(operationConfig.DerivedTypeAttributeName) ? operationConfig.DerivedTypeAttributeName :
                 !string.IsNullOrEmpty(contextConfig.DerivedTypeAttributeName) ? contextConfig.DerivedTypeAttributeName : "$type";
 
             ConsistentRead = consistentRead;
