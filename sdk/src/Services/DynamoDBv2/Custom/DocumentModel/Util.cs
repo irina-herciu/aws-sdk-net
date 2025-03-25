@@ -102,7 +102,7 @@ namespace Amazon.DynamoDBv2.DocumentModel
     /// <summary>
     /// An enumeration of all supported ConditionalOperator values.
     /// Value of And for an operation will require that all conditions match.
-    /// Value of Or for an operation will require that at least one of the conditons match.
+    /// Value of Or for an operation will require that at least one of the conditions match.
     /// </summary>
     public enum ConditionalOperatorValues
     {

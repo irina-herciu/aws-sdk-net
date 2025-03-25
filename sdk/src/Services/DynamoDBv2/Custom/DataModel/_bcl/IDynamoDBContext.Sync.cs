@@ -15,7 +15,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Linq.Expressions;
 using Amazon.DynamoDBv2.DocumentModel;
 
 namespace Amazon.DynamoDBv2.DataModel
@@ -401,6 +401,14 @@ namespace Amazon.DynamoDBv2.DataModel
         #endregion
 
         #region Scan
+
+        /// <summary>
+        /// Executes a Scan operation against DynamoDB, finding items
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        IEnumerable<T> Scan<T>(Expression<Func<T, bool>> filter);
 
         /// <summary>
         /// Executes a Scan operation against DynamoDB, finding items

@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using ThirdParty.RuntimeBackports;
 using System.Threading;
 using System.Threading.Tasks;
@@ -332,6 +333,16 @@ namespace Amazon.DynamoDBv2.DataModel
         #endregion
 
         #region Scan async
+
+        /// <inheritdoc/>
+        public IAsyncSearch<T> ScanAsync<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(Expression<Func<T,bool>> filter, string s)
+        {
+            using (DynamoDBTelemetry.CreateSpan(this, nameof(ScanAsync)))
+            {
+                var scan = ConvertScan<T>(filter, null);
+                return FromSearchAsync<T>(scan);
+            }
+        }
 
         /// <inheritdoc/>
         public IAsyncSearch<T> ScanAsync<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(IEnumerable<ScanCondition> conditions)

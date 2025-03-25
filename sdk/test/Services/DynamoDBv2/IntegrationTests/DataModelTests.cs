@@ -404,6 +404,66 @@ namespace AWSSDK_DotNet.IntegrationTests.Tests.DynamoDB
             Assert.AreEqual(employee.Age, storedEmployee.Age);
         }
 
+
+        /// <summary>
+        /// Tests that the DynamoDB operations can retrieve <see cref="DateTime"/> attributes in UTC and local timezone using the <see cref="DynamoDBOperationConfig"/>
+        /// </summary>
+        [TestMethod]
+        [TestCategory("DynamoDBv2")]
+        public void TestContext_Expression()
+        {
+            TableCache.Clear();
+            CleanupTables();
+            TableCache.Clear();
+#pragma warning disable CS0618 // Disable the warning for the deprecated DynamoDBContext constructors
+            Context = new DynamoDBContext(Client, new DynamoDBContextConfig { Conversion = DynamoDBEntryConversion.V2 });
+#pragma warning restore CS0618 // Re-enable the warning
+
+            var employee = new Employee()
+            {
+                Name = "Bob",
+                Age = 45,
+                CurrentStatus = Status.Active,
+                CompanyName = "test",
+            };
+
+            var employee3 = new Employee
+            {
+                Name = "Cob",
+                Age = 45,
+                CurrentStatus = Status.Inactive,
+                CompanyName = "test1",
+            };
+
+            var employee2 = new Employee
+            {
+                Name = "Rob",
+                Age = 35,
+                CurrentStatus = Status.Active,
+                CompanyName = "test",
+            };
+
+            Context.Save(employee);
+            Context.Save(employee2);
+            Context.Save(employee3);
+
+            var s = Context.Scan<Employee>(e => e.Age>40 && e.CompanyName=="test").ToList();
+            var s1 = Context.Scan<Employee>(new List<ScanCondition>()
+            {
+                new ScanCondition("Age", ScanOperator.GreaterThan, 40),
+                new ScanCondition("CompanyName", ScanOperator.Equal, "test")
+            }, new ScanConfig { RetrieveDateTimeInUtc = true }).ToList();
+
+            Assert.IsNotNull(s1);
+            Assert.AreEqual(s1.Count(),1);
+            Assert.AreEqual(s1.FirstOrDefault().Name, "Bob");
+
+            Assert.IsNotNull(s);
+            Assert.AreEqual(s.Count(), 1);
+            Assert.AreEqual(s.FirstOrDefault().Name, "Bob");
+
+        }
+
         /// <summary>
         /// Tests that the DynamoDB operations can retrieve <see cref="DateTime"/> attributes in UTC and local timezone using the <see cref="DynamoDBOperationConfig"/>
         /// </summary>

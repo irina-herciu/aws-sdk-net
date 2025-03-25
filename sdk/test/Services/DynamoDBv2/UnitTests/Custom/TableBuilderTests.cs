@@ -2,9 +2,37 @@
 using Amazon.DynamoDBv2.DocumentModel;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using Amazon.DynamoDBv2.DataModel;
+using System.Collections.Generic;
 
 namespace AWSSDK_DotNet.UnitTests
 {
+    public class Employee
+    {
+        // Hash key
+        public virtual string Name { get; set; }
+        public string MiddleName { get; set; }
+        // Range key
+        internal virtual int Age { get; set; }
+
+        public virtual string CompanyName { get; set; }
+        public virtual int Score { get; set; }
+        public virtual string ManagerName { get; set; }
+        public byte[] Data { get; set; }
+        public Status CurrentStatus { get; set; }
+        public List<string> Aliases { get; set; }
+
+        public string InternalId { get; set; }
+    }
+    public enum Status : long
+    {
+        Active = 256,
+        Inactive = 1024,
+        Upcoming = 9999,
+        Obsolete = -10,
+        Removed = 42
+    }
+
     /// <summary>
     /// Tests for <see cref="TableBuilder"/>
     /// </summary>

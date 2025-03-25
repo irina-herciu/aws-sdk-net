@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2.DocumentModel;
@@ -476,15 +477,25 @@ namespace Amazon.DynamoDBv2.DataModel
         #region Scan async
 
         /// <summary>
-        /// Configures an async Scan operation against DynamoDB, finding items
-        /// that match the specified conditions.
+        /// Configures an async Scan operation against DynamoDB, finding all items in a table.
         /// </summary>
-        /// <typeparam name="T">Type of object.</typeparam>
-        /// <param name="conditions">
-        /// Conditions that the results should meet.
-        /// </param>
-        /// <returns>AsyncSearch which can be used to retrieve DynamoDB data.</returns>
-        IAsyncSearch<T> ScanAsync<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(IEnumerable<ScanCondition> conditions);
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <param name="s"></param>
+        /// <returns></returns>
+        IAsyncSearch<T> ScanAsync<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(
+            Expression<Func<T,bool>> filter, string s);
+
+       /// <summary>
+       /// Configures an async Scan operation against DynamoDB, finding items
+       /// that match the specified conditions.
+       /// </summary>
+       /// <typeparam name="T">Type of object.</typeparam>
+       /// <param name="conditions">
+       /// Conditions that the results should meet.
+       /// </param>
+       /// <returns>AsyncSearch which can be used to retrieve DynamoDB data.</returns>
+       IAsyncSearch<T> ScanAsync<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(IEnumerable<ScanCondition> conditions);
 
         /// <summary>
         /// Configures an async Scan operation against DynamoDB, finding items

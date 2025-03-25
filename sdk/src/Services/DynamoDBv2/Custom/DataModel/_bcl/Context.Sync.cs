@@ -289,6 +289,16 @@ namespace Amazon.DynamoDBv2.DataModel
         #region Scan
 
         /// <inheritdoc/>
+        public IEnumerable<T> Scan<T>(Expression<Func<T, bool>> filter)
+        {
+            using (DynamoDBTelemetry.CreateSpan(this, nameof(Scan)))
+            {
+                var scan = ConvertScan<T>(filter, null);
+                return FromSearch<T>(scan);
+            }
+        }
+
+        /// <inheritdoc/>
         public IEnumerable<T> Scan<T>(params ScanCondition[] conditions)
         {
             using (DynamoDBTelemetry.CreateSpan(this, nameof(Scan)))
