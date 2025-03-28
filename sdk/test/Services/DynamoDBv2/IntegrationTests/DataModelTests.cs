@@ -1897,7 +1897,7 @@ namespace AWSSDK_DotNet.IntegrationTests.Tests.DynamoDB
                         ExpressionAttributeValues = { [":score"] = 1 }
                     },
                     new Expression
-                    {
+                    {   
                         ExpressionStatement = "#version = :version",
                         ExpressionAttributeNames = { ["#version"] = "Version" },
                         ExpressionAttributeValues = { [":version"] = employee1.Version }

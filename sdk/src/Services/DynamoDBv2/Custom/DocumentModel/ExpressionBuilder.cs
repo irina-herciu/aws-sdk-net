@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Amazon.DynamoDBv2.DocumentModel.likeJava;
 
 namespace Amazon.DynamoDBv2.DocumentModel
 {

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Amazon.DynamoDBv2.DocumentModel
+namespace Amazon.DynamoDBv2.DocumentModel.likeJava
 {
     /// <summary>
     /// Interface for a builder that constructs a <see cref="Expression"/>
