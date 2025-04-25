@@ -1,8 +1,10 @@
-﻿using Amazon.DynamoDBv2.DataModel;
+﻿using System;
+using Amazon.DynamoDBv2.DataModel;
 using Amazon.DynamoDBv2.DocumentModel;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,7 +22,7 @@ namespace AWSSDK.UnitTests.DynamoDBv2.NetFramework.Custom.MockabilityTests
                 .Returns(CreateMockAsyncSearch(new List<string> { "item1", "item2" }));
 
             var ddbContext = mockContext.Object;
-            var asyncSearch = ddbContext.ScanAsync<string>(null);
+            var asyncSearch = ddbContext.ScanAsync<string>((Expression<Func<string, bool>>)null);
 
             var results = await asyncSearch.GetNextSetAsync();
             Assert.AreEqual(2, results.Count);

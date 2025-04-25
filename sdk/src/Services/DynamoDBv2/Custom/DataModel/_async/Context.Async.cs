@@ -335,7 +335,7 @@ namespace Amazon.DynamoDBv2.DataModel
         #region Scan async
 
         /// <inheritdoc/>
-        public IAsyncSearch<T> ScanAsync<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(Expression<Func<T,bool>> filter, string s)
+        public IAsyncSearch<T> ScanAsync<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(Expression<Func<T,bool>> filter)
         {
             using (DynamoDBTelemetry.CreateSpan(this, nameof(ScanAsync)))
             {

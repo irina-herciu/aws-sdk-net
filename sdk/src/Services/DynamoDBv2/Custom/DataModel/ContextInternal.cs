@@ -930,62 +930,127 @@ namespace Amazon.DynamoDBv2.DataModel
             }
         }
 
-        /// <summary>
-        /// Query/Scan building
-        /// </summary>
-        private ScanFilter ComposeScanFilter<T>(Expression<Func<T, bool>> filterExpression,
-            ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig,
-            ConditionalOperatorValues conditionalOperator)
+        ///// <summary>
+        ///// Query/Scan building
+        ///// </summary>
+        //private ScanFilter ComposeScanFilter<T>(Expression<Func<T, bool>> filterExpression,
+        //    ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig,
+        //    ConditionalOperatorValues conditionalOperator)
+        //{
+        //    ScanFilter filter = new ScanFilter();
+        //    if (filterExpression != null)
+        //    {
+        //        var expression = filterExpression.Body;
+        //        VisitExpression(expression,filter, conditionalOperator, storageConfig, flatConfig);
+        //    }
+        //    return filter;
+        //}
+
+
+        private DocumentModel.Expression ComposeScanExpression<T>(Expression<Func<T, bool>> filterExpression, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
-            ScanFilter filter = new ScanFilter();
+            DocumentModel.Expression filter = new DocumentModel.Expression();
             if (filterExpression != null)
             {
-                var expression = filterExpression.Body;
-                VisitExpression(expression,filter, conditionalOperator, storageConfig, flatConfig);
+                var expressionNode= BuildExpressionNode(filterExpression.Body, storageConfig, flatConfig);
+                var aliasList = new KeyAttributeAliasList();
+                filter.ExpressionStatement = expressionNode.BuildExpressionString(aliasList,"C");
+                if (aliasList.NamesList != null && aliasList.NamesList.Count != 0)
+                {
+                    var namesDictionary = new Dictionary<string, string>();
+                    for (int i = 0; i < aliasList.NamesList.Count; i++)
+                    {
+                        namesDictionary[$"#C{i}"] = aliasList.NamesList[i];
+                    }
+
+                    filter.ExpressionAttributeNames = namesDictionary;
+                }
+
+                if (aliasList.ValuesList != null && aliasList.ValuesList.Count != 0)
+                {
+                    var values = new Dictionary<string, DynamoDBEntry>();
+                    for (int i = 0; i < aliasList.ValuesList.Count; i++)
+                    {
+                        values[$":C{i}"] = aliasList.ValuesList[i];
+                    }
+
+                    filter.ExpressionAttributeValues = values;
+                }
+
             }
             return filter;
         }
 
-        private void VisitExpression(Expression expr, ScanFilter filter, ConditionalOperatorValues conditionalOperator, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        private ExpressionNode BuildExpressionNode(Expression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
+            var node = new ExpressionNode();
+
             switch (expr)
             {
                 case BinaryExpression binary when IsComparison(binary.NodeType):
-                    HandleBinaryComparison(binary, filter, storageConfig, flatConfig);
+                    node = HandleBinaryComparison(binary, storageConfig, flatConfig);
                     break;
 
-                case BinaryExpression binary when IsCondition(binary,conditionalOperator):
-                    VisitExpression(binary.Left, filter, conditionalOperator,storageConfig, flatConfig);
-                    VisitExpression(binary.Right, filter, conditionalOperator, storageConfig, flatConfig);
+                case BinaryExpression binary:
+                    // Handle AND/OR expressions
+                    var left = BuildExpressionNode(binary.Left, storageConfig, flatConfig);
+                    var right = BuildExpressionNode(binary.Right, storageConfig, flatConfig);
+                    node.Children.Enqueue(left);
+                    node.Children.Enqueue(right);
+                    var condition = binary.NodeType == ExpressionType.AndAlso ? "AND" : "OR";
+                    node.FormatedExpression = $"($c) {condition} ($c)";
                     break;
 
                 case MethodCallExpression method:
-                    HandleMethodCall(method, filter, storageConfig, flatConfig);
+                    node = HandleMethodCall(method,storageConfig, flatConfig);
                     break;
 
                 case UnaryExpression { NodeType: ExpressionType.Not } unary:
-                    HandleNotUnary(unary, filter, storageConfig, flatConfig);
+                    var notUnary = HandleNotUnary(unary, storageConfig, flatConfig);
+                    node.Children.Enqueue(notUnary);
+                    node.FormatedExpression = $"NOT ($c)";
                     break;
 
                 default:
                     throw new NotSupportedException($"Unsupported expression type: {expr.NodeType}");
             }
+
+            return node;
         }
 
-        private static bool IsCondition(BinaryExpression binary, ConditionalOperatorValues conditionalOperator)
-        {
-            if(binary.NodeType == ExpressionType.AndAlso && conditionalOperator==ConditionalOperatorValues.And)
-            {
-                return true;
-            }
-            else if (binary.NodeType == ExpressionType.OrElse && conditionalOperator == ConditionalOperatorValues.Or)
-            {
-                return true;
-            }
-            return false;
-        }
+        //private string VisitExpression(Expression expr, DocumentModel.Expression filter, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        //{
+        //    string expressionStatement;
+        //    switch (expr)
+        //    {
+        //        case BinaryExpression binary when IsComparison(binary.NodeType):
+        //            expressionStatement = HandleBinaryComparison(binary, filter, storageConfig, flatConfig);
+        //            break;
 
-        private static void HandleBinaryComparison(BinaryExpression expr, ScanFilter filter, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        //        case BinaryExpression binary:
+        //            // Handle AND/OR expressions
+        //            var left= VisitExpression(binary.Left, filter, storageConfig, flatConfig);
+        //            var right = VisitExpression(binary.Right, filter, storageConfig, flatConfig);
+        //            var condition= binary.NodeType == ExpressionType.AndAlso ? "AND" : "OR";
+        //            expressionStatement = $"{left} {condition} {right}";
+        //            break;
+
+        //        case MethodCallExpression method:
+        //            expressionStatement = HandleMethodCall(method, filter, storageConfig, flatConfig);
+        //            break;
+
+        //        case UnaryExpression { NodeType: ExpressionType.Not } unary:
+        //            var notUnary = HandleNotUnary(unary, filter, storageConfig, flatConfig);
+        //            expressionStatement = $"NOT ({notUnary})";
+        //            break;
+
+        //        default:
+        //            throw new NotSupportedException($"Unsupported expression type: {expr.NodeType}");
+        //    }
+        //    return expressionStatement;
+        //}
+
+        private static ExpressionNode HandleBinaryComparison(BinaryExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             var member = GetMember(expr.Left) ?? GetMember(expr.Right);
             var constant = GetConstant(expr.Left) ?? GetConstant(expr.Right);
@@ -993,15 +1058,44 @@ namespace Amazon.DynamoDBv2.DataModel
             if (member == null)
                 throw new NotSupportedException("Expected member access");
 
+            var node = new ExpressionNode
+            {
+                FormatedExpression = expr.NodeType switch
+                {
+                    ExpressionType.Equal => $"$c = $c",
+                    ExpressionType.NotEqual => $"$c <> $c",
+                    ExpressionType.LessThan => $"$c < $c",
+                    ExpressionType.LessThanOrEqual => $"$c <= $c",
+                    ExpressionType.GreaterThan => $"$c > $c",
+                    ExpressionType.GreaterThanOrEqual => $"$c >= $c",
+                    _ => throw new InvalidOperationException($"Unsupported mode: {expr.NodeType}")
+                }
+            };
+
             PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(member.Member.Name);
 
-            var attributeValueList = constant != null
-                ? new List<AttributeValue> { ToAttributeValue(constant.Value) }
-                : new List<AttributeValue>();
+            var attributeValue = constant != null
+                ? ToAttributeValue(constant.Value)
+                : null;
 
-            filter.AddCondition(propertyStorage.AttributeName, MapOperator(expr.NodeType), attributeValueList);
+            //handle arrays/nested
+            var namesNode = new ExpressionNode()
+            {
+                FormatedExpression = $"$n"
+            };
+            namesNode.Names.Push(propertyStorage.AttributeName);
+            node.Children.Enqueue(namesNode);
+
+            var valuesNode = new ExpressionNode()
+            {
+                FormatedExpression = $"$v"
+            };
+            valuesNode.Values.Push(attributeValue);
+            node.Children.Enqueue(valuesNode);
+
+            return node;
         }
-        private static void HandleNotUnary(UnaryExpression expr, ScanFilter filter, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        private static ExpressionNode HandleNotUnary(UnaryExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             if (expr.Operand is MethodCallExpression methodCall)
             {
@@ -1012,15 +1106,15 @@ namespace Amazon.DynamoDBv2.DataModel
                 {
 
                     PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(member.Member.Name);
-                    filter.AddCondition(propertyStorage.AttributeName, ScanOperator.IsNotNull);
-                    return;
+                    //filter.AddCondition(propertyStorage.AttributeName, ScanOperator.IsNotNull);
+                    return new ExpressionNode();
                 }
             }
 
             throw new NotSupportedException("Unsupported NOT expression");
         }
 
-        private static void HandleMethodCall(MethodCallExpression expr, ScanFilter filter, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        private static ExpressionNode HandleMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             
             if (expr.Method.Name == "Equals" &&
@@ -1029,8 +1123,8 @@ namespace Amazon.DynamoDBv2.DataModel
             constant.Value == null)
             {
                 PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(member.Member.Name);
-                filter.AddCondition(propertyStorage.AttributeName, ScanOperator.IsNull);
-                return;
+                //filter.AddCondition(propertyStorage.AttributeName, ScanOperator.IsNull);
+                return new ExpressionNode();
             }
 
             if (expr.Method.Name == "Contains")
@@ -1038,9 +1132,9 @@ namespace Amazon.DynamoDBv2.DataModel
                 if (expr.Object is MemberExpression memberObj && expr.Arguments[0] is ConstantExpression argConst)
                 {
                     PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(memberObj.Member.Name);
-                    filter.AddCondition(propertyStorage.AttributeName, ScanOperator.Contains,
-                        new List<AttributeValue> { ToAttributeValue(argConst.Value) });
-                    return;
+                    //filter.AddCondition(propertyStorage.AttributeName, ScanOperator.Contains,
+                    //    new List<AttributeValue> { ToAttributeValue(argConst.Value) });
+                    return new ExpressionNode();
                 }
 
                 // Enumerable.Contains(collection, item)
@@ -1054,9 +1148,9 @@ namespace Amazon.DynamoDBv2.DataModel
                         var values = (IEnumerable<object>)((ConstantExpression)expr.Arguments[0]).Value;
 
                         PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(collectionExpr.Member.Name);
-                        filter.AddCondition(propertyStorage.AttributeName, ScanOperator.In,
-                            values.Select(ToAttributeValue).ToList());
-                        return;
+                        //filter.AddCondition(propertyStorage.AttributeName, ScanOperator.In,
+                        //    values.Select(ToAttributeValue).ToList());
+                        return new ExpressionNode();
                     }
                 }
             }
@@ -1067,9 +1161,9 @@ namespace Amazon.DynamoDBv2.DataModel
                 {
 
                     PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(memberExpr.Member.Name);
-                    filter.AddCondition(propertyStorage.AttributeName, ScanOperator.BeginsWith,
-                        new List<AttributeValue> { ToAttributeValue(startsWithConst.Value) });
-                    return;
+                    //filter.AddCondition(propertyStorage.AttributeName, ScanOperator.BeginsWith,
+                    //    new List<AttributeValue> { ToAttributeValue(startsWithConst.Value) });    
+                    return new ExpressionNode();
                 }
             }
 
@@ -1078,12 +1172,9 @@ namespace Amazon.DynamoDBv2.DataModel
 
         private static bool IsComparison(ExpressionType type)
         {
-            return type == ExpressionType.Equal ||
-                   type == ExpressionType.NotEqual ||
-                   type == ExpressionType.GreaterThan ||
-                   type == ExpressionType.GreaterThanOrEqual ||
-                   type == ExpressionType.LessThan ||
-                   type == ExpressionType.LessThanOrEqual;
+            return type is ExpressionType.Equal or ExpressionType.NotEqual or 
+                ExpressionType.GreaterThan or ExpressionType.GreaterThanOrEqual or
+                ExpressionType.LessThan or ExpressionType.LessThanOrEqual;
         }
 
         private static MemberExpression GetMember(Expression expr)
@@ -1098,29 +1189,16 @@ namespace Amazon.DynamoDBv2.DataModel
                 ? ue.Operand as ConstantExpression : null);
         }
 
-        private static ScanOperator MapOperator(ExpressionType exprType)
+        private static DynamoDBEntry ToAttributeValue(object value)
         {
-            return exprType switch
-            {
-                ExpressionType.Equal => ScanOperator.Equal,
-                ExpressionType.NotEqual => ScanOperator.NotEqual,
-                ExpressionType.GreaterThan => ScanOperator.GreaterThan,
-                ExpressionType.GreaterThanOrEqual => ScanOperator.GreaterThanOrEqual,
-                ExpressionType.LessThan => ScanOperator.LessThan,
-                ExpressionType.LessThanOrEqual => ScanOperator.LessThanOrEqual,
-                _ => throw new NotSupportedException($"Unsupported comparison: {exprType}")
-            };
-        }
-
-        private static AttributeValue ToAttributeValue(object value)
-        {
+            //todo - add support for other types
             return value switch
             {
-                string s => new AttributeValue { S = s },
-                int i => new AttributeValue { N = i.ToString() },
-                long l => new AttributeValue { N = l.ToString() },
-                double d => new AttributeValue { N = d.ToString() },
-                bool b => new AttributeValue { BOOL = b },
+                string s => s,
+                int i => i,
+                long l => l,
+                double d => d,
+                bool b => b,
                 _ => throw new NotSupportedException($"Unsupported value type: {value.GetType().Name}")
             };
         }
@@ -1452,15 +1530,18 @@ namespace Amazon.DynamoDBv2.DataModel
         {
             DynamoDBFlatConfig flatConfig = new DynamoDBFlatConfig(operationConfig, this.Config);
             ItemStorageConfig storageConfig = StorageConfigCache.GetConfig<T>(flatConfig);
-            ScanFilter filter = ComposeScanFilter(filterExpression, storageConfig, flatConfig, flatConfig.ConditionalOperator);
+            //ScanFilter filter = ComposeScanFilter(filterExpression, storageConfig, flatConfig, flatConfig.ConditionalOperator);
+
+            DocumentModel.Expression expression = ComposeScanExpression(filterExpression, storageConfig, flatConfig);
 
             Table table = GetTargetTable(storageConfig, flatConfig);
             var scanConfig = new ScanOperationConfig
             {
                 AttributesToGet = storageConfig.AttributesToGet,
                 Select = SelectValues.SpecificAttributes,
-                Filter = filter,
-                ConditionalOperator = flatConfig.ConditionalOperator,
+                //Filter = filter,
+                //ConditionalOperator = flatConfig.ConditionalOperator,
+                FilterExpression = expression,
                 IndexName = flatConfig.IndexName,
                 ConsistentRead = flatConfig.ConsistentRead.GetValueOrDefault(false)
             };

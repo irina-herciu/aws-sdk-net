@@ -481,10 +481,9 @@ namespace Amazon.DynamoDBv2.DataModel
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="filter"></param>
-        /// <param name="s"></param>
         /// <returns></returns>
         IAsyncSearch<T> ScanAsync<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(
-            Expression<Func<T,bool>> filter, string s);
+            Expression<Func<T,bool>> filter);
 
        /// <summary>
        /// Configures an async Scan operation against DynamoDB, finding items
