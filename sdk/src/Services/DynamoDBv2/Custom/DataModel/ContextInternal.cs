@@ -930,23 +930,6 @@ namespace Amazon.DynamoDBv2.DataModel
             }
         }
 
-        ///// <summary>
-        ///// Query/Scan building
-        ///// </summary>
-        //private ScanFilter ComposeScanFilter<T>(Expression<Func<T, bool>> filterExpression,
-        //    ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig,
-        //    ConditionalOperatorValues conditionalOperator)
-        //{
-        //    ScanFilter filter = new ScanFilter();
-        //    if (filterExpression != null)
-        //    {
-        //        var expression = filterExpression.Body;
-        //        VisitExpression(expression,filter, conditionalOperator, storageConfig, flatConfig);
-        //    }
-        //    return filter;
-        //}
-
-
         private DocumentModel.Expression ComposeScanExpression<T>(Expression<Func<T, bool>> filterExpression, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             DocumentModel.Expression filter = new DocumentModel.Expression();
@@ -1017,38 +1000,6 @@ namespace Amazon.DynamoDBv2.DataModel
 
             return node;
         }
-
-        //private string VisitExpression(Expression expr, DocumentModel.Expression filter, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
-        //{
-        //    string expressionStatement;
-        //    switch (expr)
-        //    {
-        //        case BinaryExpression binary when IsComparison(binary.NodeType):
-        //            expressionStatement = HandleBinaryComparison(binary, filter, storageConfig, flatConfig);
-        //            break;
-
-        //        case BinaryExpression binary:
-        //            // Handle AND/OR expressions
-        //            var left= VisitExpression(binary.Left, filter, storageConfig, flatConfig);
-        //            var right = VisitExpression(binary.Right, filter, storageConfig, flatConfig);
-        //            var condition= binary.NodeType == ExpressionType.AndAlso ? "AND" : "OR";
-        //            expressionStatement = $"{left} {condition} {right}";
-        //            break;
-
-        //        case MethodCallExpression method:
-        //            expressionStatement = HandleMethodCall(method, filter, storageConfig, flatConfig);
-        //            break;
-
-        //        case UnaryExpression { NodeType: ExpressionType.Not } unary:
-        //            var notUnary = HandleNotUnary(unary, filter, storageConfig, flatConfig);
-        //            expressionStatement = $"NOT ({notUnary})";
-        //            break;
-
-        //        default:
-        //            throw new NotSupportedException($"Unsupported expression type: {expr.NodeType}");
-        //    }
-        //    return expressionStatement;
-        //}
 
         private static ExpressionNode HandleBinaryComparison(BinaryExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
@@ -1532,7 +1483,7 @@ namespace Amazon.DynamoDBv2.DataModel
             ItemStorageConfig storageConfig = StorageConfigCache.GetConfig<T>(flatConfig);
             //ScanFilter filter = ComposeScanFilter(filterExpression, storageConfig, flatConfig, flatConfig.ConditionalOperator);
 
-            DocumentModel.Expression expression = ComposeScanExpression(filterExpression, storageConfig, flatConfig);
+           DocumentModel.Expression expression = ComposeScanExpression(filterExpression, storageConfig, flatConfig);
 
             Table table = GetTargetTable(storageConfig, flatConfig);
             var scanConfig = new ScanOperationConfig

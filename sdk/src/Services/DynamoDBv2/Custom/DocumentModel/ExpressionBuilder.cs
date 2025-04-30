@@ -1527,6 +1527,7 @@ namespace Amazon.DynamoDBv2.DocumentModel
                 if (FormatedExpression[i] == '$' && i + 1 < FormatedExpression.Length)
                 {
                     var next = FormatedExpression[i + 1];
+                    string alias;
                     switch (next)
                     {
                         case 'n':
@@ -1534,8 +1535,8 @@ namespace Amazon.DynamoDBv2.DocumentModel
                                 if (Names.Count == 0)
                                     throw new InvalidOperationException("Missing name for $n");
 
-                                string name = Names.Pop();
-                                string alias = $"#{expressionType}{aliasList.NamesList.Count}";
+                                var name = Names.Pop();
+                                alias = $"#{expressionType}{aliasList.NamesList.Count}";
                                 aliasList.NamesList.Add(name);
                                 result.Append(alias);
                                 break;
@@ -1546,7 +1547,7 @@ namespace Amazon.DynamoDBv2.DocumentModel
                                     throw new InvalidOperationException("Missing value for $v");
 
                                 var val = Values.Pop();
-                                string alias = $":{expressionType}{aliasList.ValuesList.Count}";
+                                alias = $":{expressionType}{aliasList.ValuesList.Count}";
                                 aliasList.ValuesList.Add(val);
                                 result.Append(alias);
                                 break;
@@ -1557,7 +1558,7 @@ namespace Amazon.DynamoDBv2.DocumentModel
                                     throw new InvalidOperationException("Missing child for $c");
 
                                 var child = Children.Dequeue();
-                                string subExpr = child.BuildExpressionString(aliasList, expressionType);
+                                var subExpr = child.BuildExpressionString(aliasList, expressionType);
                                 result.Append(subExpr);
                                 break;
                             }

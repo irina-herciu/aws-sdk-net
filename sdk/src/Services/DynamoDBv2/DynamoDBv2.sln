@@ -1,12 +1,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26730.12
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35931.197 d17.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{9863FCB3-BFA4-4B9C-B8F6-302BA5F660B8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.Core.NetFramework", "../../Core/AWSSDK.Core.NetFramework.csproj", "{7DE3AFA0-1B2D-41B1-82BD-120B8B210B43}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.Core.NetFramework", "..\..\Core\AWSSDK.Core.NetFramework.csproj", "{7DE3AFA0-1B2D-41B1-82BD-120B8B210B43}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.Core.NetStandard", "../../Core/AWSSDK.Core.NetStandard.csproj", "{A855B58E-ED32-40AE-AE8F-054F448B9F2C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.Core.NetStandard", "..\..\Core\AWSSDK.Core.NetStandard.csproj", "{A855B58E-ED32-40AE-AE8F-054F448B9F2C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{939EC5C2-8345-43E2-8F97-72EEEBEEA0AB}"
 EndProject
@@ -18,33 +18,35 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.DynamoDBv2.NetStanda
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{12EC4E4B-7E2C-4B63-8EF9-7B959F82A89B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.IntegrationTests.DynamoDBv2.NetFramework", "../../../test/Services/DynamoDBv2/IntegrationTests/AWSSDK.IntegrationTests.DynamoDBv2.NetFramework.csproj", "{04C4A947-D976-465E-B694-86ED142D1D57}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.IntegrationTests.DynamoDBv2.NetFramework", "..\..\..\test\Services\DynamoDBv2\IntegrationTests\AWSSDK.IntegrationTests.DynamoDBv2.NetFramework.csproj", "{04C4A947-D976-465E-B694-86ED142D1D57}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.UnitTests.DynamoDBv2.NetFramework", "../../../test/Services/DynamoDBv2/UnitTests/AWSSDK.UnitTests.DynamoDBv2.NetFramework.csproj", "{E4BA1B84-42E1-475C-9D05-DA51A8708915}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.UnitTests.DynamoDBv2.NetFramework", "..\..\..\test\Services\DynamoDBv2\UnitTests\AWSSDK.UnitTests.DynamoDBv2.NetFramework.csproj", "{E4BA1B84-42E1-475C-9D05-DA51A8708915}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceClientGeneratorLib", "../../../../generator/ServiceClientGeneratorLib/ServiceClientGeneratorLib.csproj", "{7BEE7C44-BE12-43CC-AFB9-B5852A1F43C8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceClientGeneratorLib", "..\..\..\..\generator\ServiceClientGeneratorLib\ServiceClientGeneratorLib.csproj", "{7BEE7C44-BE12-43CC-AFB9-B5852A1F43C8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.UnitTestUtilities.NetFramework", "../../../test/UnitTests/Custom/AWSSDK.UnitTestUtilities.NetFramework.csproj", "{002B183F-E568-49CD-9D06-CBCFF2C2921F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.UnitTestUtilities.NetFramework", "..\..\..\test\UnitTests\Custom\AWSSDK.UnitTestUtilities.NetFramework.csproj", "{002B183F-E568-49CD-9D06-CBCFF2C2921F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.IntegrationTestUtilities.NetFramework", "../../../test/IntegrationTests/AWSSDK.IntegrationTestUtilities.NetFramework.csproj", "{7AB0DA1C-CA0E-4579-BA82-2B41A9DA15C7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.IntegrationTestUtilities.NetFramework", "..\..\..\test\IntegrationTests\AWSSDK.IntegrationTestUtilities.NetFramework.csproj", "{7AB0DA1C-CA0E-4579-BA82-2B41A9DA15C7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.CommonTest", "../../../test/Common/AWSSDK.CommonTest.csproj", "{66F78F86-68D7-4538-8EA5-A669A08E1C19}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.CommonTest", "..\..\..\test\Common\AWSSDK.CommonTest.csproj", "{66F78F86-68D7-4538-8EA5-A669A08E1C19}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.CommonTest.NetStandard", "../../../test/NetStandard/Common/AWSSDK.CommonTest.NetStandard.csproj", "{87FCE8BC-9E24-4D84-B5CF-C1BA7A51423F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.CommonTest.NetStandard", "..\..\..\test\NetStandard\Common\AWSSDK.CommonTest.NetStandard.csproj", "{87FCE8BC-9E24-4D84-B5CF-C1BA7A51423F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTests.NetStandard.CoreOnly", "../../../test/NetStandard/UnitTests/UnitTests.NetStandard.CoreOnly.csproj", "{B969DE99-0634-4989-A318-086AE1699974}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTests.NetStandard.CoreOnly", "..\..\..\test\NetStandard\UnitTests\UnitTests.NetStandard.CoreOnly.csproj", "{B969DE99-0634-4989-A318-086AE1699974}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IntegrationTestDependencies", "IntegrationTestDependencies", "{939EC5C2-8345-43E2-8F97-72EEEBEEA0AC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.S3.NetFramework", "../S3/AWSSDK.S3.NetFramework.csproj", "{F05CE6FA-2200-4AD6-B235-3282C082C87B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.S3.NetFramework", "..\S3\AWSSDK.S3.NetFramework.csproj", "{F05CE6FA-2200-4AD6-B235-3282C082C87B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.Extensions.CrtIntegration.NetFramework", "../../../../extensions/src/AWSSDK.Extensions.CrtIntegration/AWSSDK.Extensions.CrtIntegration.NetFramework.csproj", "{0E3A04EB-72BA-417C-9711-82833775C88D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.Extensions.CrtIntegration.NetFramework", "..\..\..\..\extensions\src\AWSSDK.Extensions.CrtIntegration\AWSSDK.Extensions.CrtIntegration.NetFramework.csproj", "{0E3A04EB-72BA-417C-9711-82833775C88D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.IdentityManagement.NetFramework", "../IdentityManagement/AWSSDK.IdentityManagement.NetFramework.csproj", "{0D0DCE79-4BE3-4DE4-ABA1-B69A7B0380FA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.IdentityManagement.NetFramework", "..\IdentityManagement\AWSSDK.IdentityManagement.NetFramework.csproj", "{0D0DCE79-4BE3-4DE4-ABA1-B69A7B0380FA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.SecurityToken.NetFramework", "../SecurityToken/AWSSDK.SecurityToken.NetFramework.csproj", "{E7C4B0F7-A097-4715-AA2F-1FB6FE427E3F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.SecurityToken.NetFramework", "..\SecurityToken\AWSSDK.SecurityToken.NetFramework.csproj", "{E7C4B0F7-A097-4715-AA2F-1FB6FE427E3F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.SimpleNotificationService.NetFramework", "../SimpleNotificationService/AWSSDK.SimpleNotificationService.NetFramework.csproj", "{938FEF02-6B7E-46DB-8ABE-39A56A4052C6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSSDK.SimpleNotificationService.NetFramework", "..\SimpleNotificationService\AWSSDK.SimpleNotificationService.NetFramework.csproj", "{938FEF02-6B7E-46DB-8ABE-39A56A4052C6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AWSSDK.BenchmarkTests.DynamoDBv2", "..\..\..\test\Services\DynamoDBv2\Benchmark\AWSSDK.BenchmarkTests.DynamoDBv2\AWSSDK.BenchmarkTests.DynamoDBv2.csproj", "{1EC2057A-FE5D-4FBB-BF11-F1AAE72B8EAA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -120,6 +122,10 @@ Global
 		{938FEF02-6B7E-46DB-8ABE-39A56A4052C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{938FEF02-6B7E-46DB-8ABE-39A56A4052C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{938FEF02-6B7E-46DB-8ABE-39A56A4052C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1EC2057A-FE5D-4FBB-BF11-F1AAE72B8EAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1EC2057A-FE5D-4FBB-BF11-F1AAE72B8EAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1EC2057A-FE5D-4FBB-BF11-F1AAE72B8EAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1EC2057A-FE5D-4FBB-BF11-F1AAE72B8EAA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -143,6 +149,7 @@ Global
 		{0D0DCE79-4BE3-4DE4-ABA1-B69A7B0380FA} = {939EC5C2-8345-43E2-8F97-72EEEBEEA0AC}
 		{E7C4B0F7-A097-4715-AA2F-1FB6FE427E3F} = {939EC5C2-8345-43E2-8F97-72EEEBEEA0AC}
 		{938FEF02-6B7E-46DB-8ABE-39A56A4052C6} = {939EC5C2-8345-43E2-8F97-72EEEBEEA0AC}
+		{1EC2057A-FE5D-4FBB-BF11-F1AAE72B8EAA} = {12EC4E4B-7E2C-4B63-8EF9-7B959F82A89B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7C82480B-D645-4E3A-B4AD-650183206F4D}
