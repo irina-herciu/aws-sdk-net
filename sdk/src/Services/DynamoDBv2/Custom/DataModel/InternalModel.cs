@@ -131,6 +131,7 @@ namespace Amazon.DynamoDBv2.DataModel
         public bool IsRangeKey { get; set; }
         public bool IsKey { get { return IsHashKey || IsRangeKey; } }
         public bool IsVersion { get; set; }
+        public bool IsFlatten { get; set; }
         public bool IsLSIRangeKey { get; set; }
         public bool IsGSIHashKey { get; set; }
         public bool IsGSIRangeKey { get; set; }
@@ -953,10 +954,19 @@ namespace Amazon.DynamoDBv2.DataModel
             {
                 // filter out ignored properties
                 if (attribute is DynamoDBIgnoreAttribute)
+                {
                     propertyStorage.IsIgnored = true;
+                    continue;
+                }
 
                 if (attribute is DynamoDBVersionAttribute)
                     propertyStorage.IsVersion = true;
+
+                if (attribute is DynamoDBFlattenAttribute)
+                {
+                    propertyStorage.IsFlatten = true;
+                    continue;
+                }
 
                 DynamoDBRenamableAttribute renamableAttribute = attribute as DynamoDBRenamableAttribute;
                 if (renamableAttribute != null && !string.IsNullOrEmpty(renamableAttribute.AttributeName))
@@ -1014,7 +1024,7 @@ namespace Amazon.DynamoDBv2.DataModel
                 }
             }
 
-            return propertyStorage;
+            return  propertyStorage;
         }
 
         private static void PopulateConfigFromTable(ItemStorageConfig config, Table table)

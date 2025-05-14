@@ -392,7 +392,6 @@ namespace Amazon.DynamoDBv2.DataModel
             {
                 foreach (PropertyStorage propertyStorage in storageConfig.AllPropertyStorage)
                 {
-                    string propertyName = propertyStorage.PropertyName;
                     string attributeName = propertyStorage.AttributeName;
 
                     DynamoDBEntry entry;
@@ -479,19 +478,34 @@ namespace Amazon.DynamoDBv2.DataModel
 
                         if (ShouldSave(dbe, ignoreNullValues))
                         {
-                            Primitive dbePrimitive = dbe as Primitive;
-                            if (propertyStorage.IsHashKey || propertyStorage.IsRangeKey ||
-                                propertyStorage.IsVersion || propertyStorage.IsLSIRangeKey)
+
+                            if (propertyStorage.IsFlatten)
                             {
-                                if (dbe != null && dbePrimitive == null)
-                                    throw new InvalidOperationException("Property " + propertyName +
-                                                                        " is a hash key, range key or version property and must be Primitive");
+                                if (dbe != null)
+                                {
+                                    if (dbe is not Document innerDocument) continue;
+                                    foreach (var pair in innerDocument)
+                                    {
+                                        document[pair.Key] = pair.Value;
+                                    }
+                                }
                             }
+                            else
+                            {
+                                Primitive dbePrimitive = dbe as Primitive;
+                                if (propertyStorage.IsHashKey || propertyStorage.IsRangeKey ||
+                                    propertyStorage.IsVersion || propertyStorage.IsLSIRangeKey)
+                                {
+                                    if (dbe != null && dbePrimitive == null)
+                                        throw new InvalidOperationException("Property " + propertyName +
+                                                                            " is a hash key, range key or version property and must be Primitive");
+                                }
 
-                            document[attributeName] = dbe;
+                                document[attributeName] = dbe;
 
-                            if (propertyStorage.IsVersion)
-                                storage.CurrentVersion = dbePrimitive;
+                                if (propertyStorage.IsVersion)
+                                    storage.CurrentVersion = dbePrimitive;
+                            }
                         }
                     }
                     else

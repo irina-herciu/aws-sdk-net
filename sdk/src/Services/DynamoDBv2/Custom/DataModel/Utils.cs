@@ -528,7 +528,19 @@ namespace Amazon.DynamoDBv2.DataModel
             return members.Values.ToList();
         }
 
-#endregion
+        internal static Type GetMemberType(MemberInfo member)
+        {
+            return member switch
+            {
+                PropertyInfo property => property.PropertyType,
+                FieldInfo field => field.FieldType,
+                MethodInfo method => method.ReturnType,
+                EventInfo eventInfo => eventInfo.EventHandlerType,
+                _ => throw new ArgumentException("Unsupported member type", nameof(member))
+            };
+        }
+
+        #endregion
 
     }
 }

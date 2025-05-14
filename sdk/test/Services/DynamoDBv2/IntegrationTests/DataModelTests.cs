@@ -2629,7 +2629,12 @@ namespace AWSSDK_DotNet.IntegrationTests.Tests.DynamoDB
                     S2 = 2,
                     S3 = 3
                 },
-                MyClasses = new List<A> { a1, b1 }
+                MyClasses = new List<A> { a1, b1 },
+                FlatAddress = new Address()
+                {
+                    City = "Seattle",
+                    Street = "Street"
+                }
             };
             return model;
         }
@@ -3141,7 +3146,8 @@ namespace AWSSDK_DotNet.IntegrationTests.Tests.DynamoDB
         [DynamoDBPolymorphicType("A2", typeof(ModelA2))]
         public class ModelA
         {
-            [DynamoDBHashKey] public Guid Id { get; set; }
+            [DynamoDBHashKey] 
+            public Guid Id { get; set; }
 
             public A MyType { get; set; }
             
@@ -3157,6 +3163,15 @@ namespace AWSSDK_DotNet.IntegrationTests.Tests.DynamoDB
 
             [DynamoDBLocalSecondaryIndexRangeKey("LocalIndex", AttributeName = "Manager")]
             public string ManagerName { get; set; }
+
+            [DynamoDBFlatten]
+            public Address FlatAddress { get; set; }
+        }
+
+        public class Address
+        {
+            public string Street { get; set; }
+            public string City { get; set; }
         }
 
         public class ModelA1 : ModelA
