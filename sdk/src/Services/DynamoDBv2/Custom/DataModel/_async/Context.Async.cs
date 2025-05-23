@@ -21,6 +21,7 @@ using ThirdParty.RuntimeBackports;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2.DocumentModel;
+using System.Linq.Expressions;
 
 namespace Amazon.DynamoDBv2.DataModel
 {
@@ -339,6 +340,16 @@ namespace Amazon.DynamoDBv2.DataModel
             using (DynamoDBTelemetry.CreateSpan(this, nameof(ScanAsync)))
             {
                 var scan = ConvertScan<T>(conditions, null);
+                return FromSearchAsync<T>(scan);
+            }
+        }
+
+        /// <inheritdoc/>
+        public IAsyncSearch<T> ScanAsync<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(Expression<Func<T, bool>> filter)
+        {
+            using (DynamoDBTelemetry.CreateSpan(this, nameof(ScanAsync)))
+            {
+                var scan = ConvertScan<T>(filter, null);
                 return FromSearchAsync<T>(scan);
             }
         }

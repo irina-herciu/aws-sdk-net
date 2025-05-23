@@ -26,7 +26,9 @@ using Amazon.DynamoDBv2.Model;
 using Amazon.Util.Internal;
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using ThirdParty.RuntimeBackports;
+using Expression = System.Linq.Expressions.Expression;
 
 namespace Amazon.DynamoDBv2.DataModel
 {
@@ -88,9 +90,9 @@ namespace Amazon.DynamoDBv2.DataModel
             return document;
         }
 
-        internal static Expression CreateConditionExpressionForVersion(ItemStorage storage, DynamoDBEntry.AttributeConversionConfig conversionConfig)
+        internal static DocumentModel.Expression CreateConditionExpressionForVersion(ItemStorage storage, DynamoDBEntry.AttributeConversionConfig conversionConfig)
         {
-            if (!storage.Config.HasVersion) return new Expression();
+            if (!storage.Config.HasVersion) return new DocumentModel.Expression();
 
             bool shouldExist = storage.CurrentVersion?.ConvertToExpectedAttributeValue(conversionConfig).Exists ?? false;
             string variableName = Common.GetVariableName("version");
@@ -99,7 +101,7 @@ namespace Amazon.DynamoDBv2.DataModel
 
             if (!shouldExist)
             {
-                return new Expression
+                return new DocumentModel.Expression
                 {
                     ExpressionStatement = $"attribute_not_exists({attributeReference})",
                     ExpressionAttributeNames = { [attributeReference] = versionAttributeName }
@@ -107,7 +109,7 @@ namespace Amazon.DynamoDBv2.DataModel
             }
 
             string attributeValueReference = Common.GetAttributeValueReference(variableName);
-            return new Expression
+            return new DocumentModel.Expression
             {
                 ExpressionStatement = $"{attributeReference} = {attributeValueReference}",
                 ExpressionAttributeNames = { [attributeReference] = versionAttributeName },
@@ -1131,6 +1133,229 @@ namespace Amazon.DynamoDBv2.DataModel
             return conditions;
         }
 
+        private DocumentModel.Expression ComposeScanExpression<T>(Expression<Func<T, bool>> filterExpression, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        {
+            DocumentModel.Expression filter = new DocumentModel.Expression();
+            if (filterExpression != null)
+            {
+                var expressionNode = BuildExpressionNode(filterExpression.Body, storageConfig, flatConfig);
+                var aliasList = new KeyAttributeAliasList();
+                filter.ExpressionStatement = expressionNode.BuildExpressionString(aliasList, "C");
+                if (aliasList.NamesList != null && aliasList.NamesList.Count != 0)
+                {
+                    var namesDictionary = new Dictionary<string, string>();
+                    for (int i = 0; i < aliasList.NamesList.Count; i++)
+                    {
+                        namesDictionary[$"#C{i}"] = aliasList.NamesList[i];
+                    }
+
+                    filter.ExpressionAttributeNames = namesDictionary;
+                }
+
+                if (aliasList.ValuesList != null && aliasList.ValuesList.Count != 0)
+                {
+                    var values = new Dictionary<string, DynamoDBEntry>();
+                    for (int i = 0; i < aliasList.ValuesList.Count; i++)
+                    {
+                        values[$":C{i}"] = aliasList.ValuesList[i];
+                    }
+
+                    filter.ExpressionAttributeValues = values;
+                }
+
+            }
+            return filter;
+        }
+
+        private ExpressionNode BuildExpressionNode(Expression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        {
+            var node = new ExpressionNode();
+
+            switch (expr)
+            {
+                case BinaryExpression binary when IsComparison(binary.NodeType):
+                    node = HandleBinaryComparison(binary, storageConfig, flatConfig);
+                    break;
+
+                case BinaryExpression binary:
+                    // Handle AND/OR expressions
+                    var left = BuildExpressionNode(binary.Left, storageConfig, flatConfig);
+                    var right = BuildExpressionNode(binary.Right, storageConfig, flatConfig);
+                    node.Children.Enqueue(left);
+                    node.Children.Enqueue(right);
+                    var condition = binary.NodeType == ExpressionType.AndAlso ? "AND" : "OR";
+                    node.FormatedExpression = $"(#c) {condition} (#c)";
+                    break;
+
+                case MethodCallExpression method:
+                    node = HandleMethodCall(method, storageConfig, flatConfig);
+                    break;
+
+                case UnaryExpression { NodeType: ExpressionType.Not } unary:
+                    var notUnary = HandleNotUnary(unary, storageConfig, flatConfig);
+                    node.Children.Enqueue(notUnary);
+                    node.FormatedExpression = $"NOT (#c)";
+                    break;
+
+                default:
+                    throw new NotSupportedException($"Unsupported expression type: {expr.NodeType}");
+            }
+
+            return node;
+        }
+
+        private static ExpressionNode HandleBinaryComparison(BinaryExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        {
+            var member = GetMember(expr.Left) ?? GetMember(expr.Right);
+            var constant = GetConstant(expr.Left) ?? GetConstant(expr.Right);
+
+            if (member == null)
+                throw new NotSupportedException("Expected member access");
+
+            var node = new ExpressionNode
+            {
+                FormatedExpression = expr.NodeType switch
+                {
+                    ExpressionType.Equal => $"#c = #c",
+                    ExpressionType.NotEqual => $"#c <> #c",
+                    ExpressionType.LessThan => $"#c < #c",
+                    ExpressionType.LessThanOrEqual => $"#c <= #c",
+                    ExpressionType.GreaterThan => $"#c > #c",
+                    ExpressionType.GreaterThanOrEqual => $"#c >= #c",
+                    _ => throw new InvalidOperationException($"Unsupported mode: {expr.NodeType}")
+                }
+            };
+
+            PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(member.Member.Name);
+
+            var attributeValue = constant != null
+                ? ToAttributeValue(constant.Value)
+                : null;
+
+            //handle arrays/nested
+            var namesNode = new ExpressionNode()
+            {
+                FormatedExpression = $"#n"
+            };
+            namesNode.Names.Enqueue(propertyStorage.AttributeName);
+            node.Children.Enqueue(namesNode);
+
+            var valuesNode = new ExpressionNode()
+            {
+                FormatedExpression = $"v"
+            };
+            valuesNode.Values.Enqueue(attributeValue);
+            node.Children.Enqueue(valuesNode);
+
+            return node;
+        }
+        private static ExpressionNode HandleNotUnary(UnaryExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        {
+            if (expr.Operand is MethodCallExpression methodCall)
+            {
+                if (methodCall.Method.Name == "Equals" &&
+                    methodCall.Object is MemberExpression member &&
+                    methodCall.Arguments[0] is ConstantExpression constant &&
+                    constant.Value == null)
+                {
+                    PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(member.Member.Name);
+                    //filter.AddCondition(propertyStorage.AttributeName, ScanOperator.IsNotNull);
+                    return new ExpressionNode();
+                }
+            }
+
+            throw new NotSupportedException("Unsupported NOT expression");
+        }
+
+        private static ExpressionNode HandleMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        {
+
+            if (expr.Method.Name == "Equals" &&
+            expr.Object is MemberExpression member &&
+            expr.Arguments[0] is ConstantExpression constant &&
+            constant.Value == null)
+            {
+                PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(member.Member.Name);
+                //filter.AddCondition(propertyStorage.AttributeName, ScanOperator.IsNull);
+                return new ExpressionNode();
+            }
+
+            if (expr.Method.Name == "Contains")
+            {
+                if (expr.Object is MemberExpression memberObj && expr.Arguments[0] is ConstantExpression argConst)
+                {
+                    PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(memberObj.Member.Name);
+                    //filter.AddCondition(propertyStorage.AttributeName, ScanOperator.Contains,
+                    //    new List<AttributeValue> { ToAttributeValue(argConst.Value) });
+                    return new ExpressionNode();
+                }
+
+                // Enumerable.Contains(collection, item)
+                if (expr.Arguments.Count == 1 && expr.Object == null)
+                {
+                    var collectionExpr = expr.Arguments[0] as MemberExpression;
+                    var constExpr = expr.Arguments[1] as ConstantExpression;
+
+                    if (collectionExpr != null && constExpr != null)
+                    {
+                        var values = (IEnumerable<object>)((ConstantExpression)expr.Arguments[0]).Value;
+
+                        PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(collectionExpr.Member.Name);
+                        //filter.AddCondition(propertyStorage.AttributeName, ScanOperator.In,
+                        //    values.Select(ToAttributeValue).ToList());
+                        return new ExpressionNode();
+                    }
+                }
+            }
+
+            if (expr.Method.Name == "BeginsWith")
+            {
+                if (expr.Object is MemberExpression memberExpr && expr.Arguments[0] is ConstantExpression startsWithConst)
+                {
+
+                    PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(memberExpr.Member.Name);
+                    //filter.AddCondition(propertyStorage.AttributeName, ScanOperator.BeginsWith,
+                    //    new List<AttributeValue> { ToAttributeValue(startsWithConst.Value) });    
+                    return new ExpressionNode();
+                }
+            }
+
+            throw new NotSupportedException($"Unsupported method call: {expr.Method.Name}");
+        }
+
+        private static bool IsComparison(ExpressionType type)
+        {
+            return type is ExpressionType.Equal or ExpressionType.NotEqual or
+                ExpressionType.GreaterThan or ExpressionType.GreaterThanOrEqual or
+                ExpressionType.LessThan or ExpressionType.LessThanOrEqual;
+        }
+
+        private static MemberExpression GetMember(Expression expr)
+        {
+            return expr as MemberExpression ?? (expr is UnaryExpression ue
+                ? ue.Operand as MemberExpression : null);
+        }
+
+        private static ConstantExpression GetConstant(Expression expr)
+        {
+            return expr as ConstantExpression ?? (expr is UnaryExpression ue
+                ? ue.Operand as ConstantExpression : null);
+        }
+
+        private static DynamoDBEntry ToAttributeValue(object value)
+        {
+            //todo - add support for other types
+            return value switch
+            {
+                string s => s,
+                int i => i,
+                long l => l,
+                double d => d,
+                bool b => b,
+                _ => throw new NotSupportedException($"Unsupported value type: {value.GetType().Name}")
+            };
+        }
+
         // Key creation
         private DynamoDBEntry ValueToDynamoDBEntry(PropertyStorage propertyStorage, object value, DynamoDBFlatConfig flatConfig)
         {
@@ -1268,6 +1493,29 @@ namespace Amazon.DynamoDBv2.DataModel
                 Select = SelectValues.SpecificAttributes,
                 Filter = filter,
                 ConditionalOperator = flatConfig.ConditionalOperator,
+                IndexName = flatConfig.IndexName,
+                ConsistentRead = flatConfig.ConsistentRead.GetValueOrDefault(false)
+            };
+
+            // table.Scan() returns the ISearch interface but we explicitly cast it to a Search object since we rely on its internal behavior
+            Search scan = table.Scan(scanConfig) as Search;
+            return new ContextSearch(scan, flatConfig);
+        }
+
+
+        private ContextSearch ConvertScan<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(Expression<Func<T, bool>> filterExpression, DynamoDBOperationConfig operationConfig)
+        {
+            DynamoDBFlatConfig flatConfig = new DynamoDBFlatConfig(operationConfig, this.Config);
+            ItemStorageConfig storageConfig = StorageConfigCache.GetConfig<T>(flatConfig);
+           
+            DocumentModel.Expression expression = ComposeScanExpression(filterExpression, storageConfig, flatConfig);
+
+            Table table = GetTargetTable(storageConfig, flatConfig);
+            var scanConfig = new ScanOperationConfig
+            {
+                AttributesToGet = storageConfig.AttributesToGet,
+                Select = SelectValues.SpecificAttributes,
+                FilterExpression = expression,
                 IndexName = flatConfig.IndexName,
                 ConsistentRead = flatConfig.ConsistentRead.GetValueOrDefault(false)
             };

@@ -15,7 +15,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Linq.Expressions;
 using Amazon.DynamoDBv2.DocumentModel;
 
 namespace Amazon.DynamoDBv2.DataModel
@@ -415,6 +415,14 @@ namespace Amazon.DynamoDBv2.DataModel
 
         /// <summary>
         /// Executes a Scan operation against DynamoDB, finding items
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        IEnumerable<T> Scan<T>(Expression<Func<T, bool>> filter);
+
+        /// <summary>
+        /// Executes a Scan operation against DynamoDB, finding items
         /// that match the specified conditions.
         /// </summary>
         /// <typeparam name="T">Type of object.</typeparam>
@@ -503,6 +511,17 @@ namespace Amazon.DynamoDBv2.DataModel
         /// <param name="queryConfig">Config object that can be used to override properties on the table's context for this request.</param>
         /// <returns>Lazy-loaded collection of results.</returns>
         IEnumerable<T> Query<T>(object hashKeyValue, QueryConfig queryConfig);
+
+        /// <summary>
+        /// Executes a Query operation against DynamoDB, finding items
+        /// that match the specified hash primary key.
+        /// </summary>
+        /// <typeparam name="T">Type of object.</typeparam>
+        /// <param name="hashKeyValue">Hash key of the items to query.</param>
+        /// <param name="filter"></param>
+        /// <param name="queryConfig">Config object that can be used to override properties on the table's context for this request.</param>
+        /// <returns>Lazy-loaded collection of results.</returns>
+        IEnumerable<T> Query<T>(object hashKeyValue, Expression<Func<T, bool>> filter, QueryConfig queryConfig);
 
         /// <summary>
         /// Executes a Query operation against DynamoDB, finding items

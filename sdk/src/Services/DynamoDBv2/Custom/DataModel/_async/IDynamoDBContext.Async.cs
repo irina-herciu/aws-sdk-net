@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2.DocumentModel;
@@ -498,6 +499,14 @@ namespace Amazon.DynamoDBv2.DataModel
         /// </param>
         /// <returns>AsyncSearch which can be used to retrieve DynamoDB data.</returns>
         IAsyncSearch<T> ScanAsync<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(IEnumerable<ScanCondition> conditions);
+
+        /// <summary>
+        /// Configures an async Scan operation against DynamoDB, finding all items in a table.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        IAsyncSearch<T> ScanAsync<[DynamicallyAccessedMembers(InternalConstants.DataModelModeledType)] T>(Expression<Func<T, bool>> filter);
 
         /// <summary>
         /// Configures an async Scan operation against DynamoDB, finding items

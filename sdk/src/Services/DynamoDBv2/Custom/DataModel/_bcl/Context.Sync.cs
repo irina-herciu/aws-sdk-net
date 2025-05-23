@@ -298,6 +298,16 @@ namespace Amazon.DynamoDBv2.DataModel
         }
 
         /// <inheritdoc/>
+        public IEnumerable<T> Scan<T>(Expression<Func<T, bool>> filter)
+        {
+            using (DynamoDBTelemetry.CreateSpan(this, nameof(Scan)))
+            {
+                var scan = ConvertScan<T>(filter, null);
+                return FromSearch<T>(scan);
+            }
+        }
+
+        /// <inheritdoc/>
         [Obsolete("Use the Scan overload that takes ScanConfig instead, since DynamoDBOperationConfig contains properties that are not applicable to Scan.")]
         public IEnumerable<T> Scan<T>(IEnumerable<ScanCondition> conditions, DynamoDBOperationConfig operationConfig)
         {
@@ -387,6 +397,16 @@ namespace Amazon.DynamoDBv2.DataModel
             {
                 var query = ConvertQueryByValue<T>(hashKeyValue, null, queryConfig?.ToDynamoDBOperationConfig());
                 return FromSearch<T>(query);
+            }
+        }
+
+        /// <inheritdoc/>
+        public IEnumerable<T> Query<T>(object hashKeyValue, Expression<Func<T, bool>> filter, QueryConfig queryConfig)
+        {
+            using (DynamoDBTelemetry.CreateSpan(this, nameof(Query)))
+            {
+
+                throw new NotImplementedException("This overload is not implemented yet.");
             }
         }
 
