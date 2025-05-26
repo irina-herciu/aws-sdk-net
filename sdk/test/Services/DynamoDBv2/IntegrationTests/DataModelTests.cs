@@ -11,6 +11,8 @@ using Amazon.DynamoDBv2.Model;
 using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.DataModel;
 using System.Threading.Tasks;
+using System.Collections.ObjectModel;
+using Amazon.S3.Model;
 
 
 namespace AWSSDK_DotNet.IntegrationTests.Tests.DynamoDB
@@ -595,7 +597,15 @@ namespace AWSSDK_DotNet.IntegrationTests.Tests.DynamoDB
             Context.Save(employee2);
             Context.Save(employee3);
 
-            var s = Context.Scan<Employee>(e => e.Age > 40 && e.CompanyName == "test").ToList();
+            // Numeric equality
+            var ageEqResult = Context.Scan<Employee>(e => e.Age == 45).ToList();
+            Assert.AreEqual(2, ageEqResult.Count);
+
+            var ageEqMResult = Context.Scan<Employee>(e => Equals(e.Age, 45)).ToList();
+            Assert.AreEqual(2, ageEqMResult.Count);
+
+            //AND expression with BinaryComparisons 
+            var andResults = Context.Scan<Employee>(e => e.Age > 40 && e.CompanyName == "test").ToList();
             var s1 = Context.Scan<Employee>(new List<ScanCondition>()
             {
                 new ScanCondition("Age", ScanOperator.GreaterThan, 40),
@@ -603,12 +613,63 @@ namespace AWSSDK_DotNet.IntegrationTests.Tests.DynamoDB
             }, new ScanConfig { RetrieveDateTimeInUtc = true }).ToList();
 
             Assert.IsNotNull(s1);
-            Assert.AreEqual(s1.Count(), 1);
+            Assert.AreEqual(s1.Count, 1);
             Assert.AreEqual(s1.FirstOrDefault().Name, "Bob");
 
-            Assert.IsNotNull(s);
-            Assert.AreEqual(s.Count(), 1);
-            Assert.AreEqual(s.FirstOrDefault().Name, "Bob");
+            Assert.IsNotNull(andResults);
+            Assert.AreEqual(andResults.Count, 1);
+            Assert.AreEqual(andResults.FirstOrDefault().Name, "Bob");
+
+            // NOT expression
+            var notResult = Context.Scan<Employee>(e => !(e.CompanyName == "test1")).ToList();
+            Assert.AreEqual(2, notResult.Count);
+            Assert.IsTrue(notResult.All(e => e.CompanyName != "test1"));
+
+            // OR expression
+            var orResult = Context.Scan<Employee>(e => e.Name == "Bob" || e.Name == "Rob").ToList();
+            Assert.AreEqual(2, orResult.Count);
+            Assert.IsTrue(orResult.Any(e => e.Name == "Bob"));
+            Assert.IsTrue(orResult.Any(e => e.Name == "Rob"));
+
+            // Contains on list property (Aliases)
+            var empWithAliases = new Employee
+            {
+                Name = "Ali",
+                Age = 50,
+                CurrentStatus = Status.Active,
+                MiddleName = "MiddleName",
+                CompanyName = "test",
+                Aliases = new List<string> { "Al", "A", "B" }
+            };
+            Context.Save(empWithAliases);
+
+            var containsResult = Context.Scan<Employee>(e => e.Aliases.Contains("Al")).ToList();
+            Assert.IsTrue(containsResult.Any(e => e.Name == "Ali"));
+
+            var containsEnumerableResult = Context.Scan<Employee>(e => Enumerable.Contains(e.Aliases, "Al")).ToList();
+            Assert.IsTrue(containsEnumerableResult.Any(e => e.Name == "Ali"));
+
+            // String.StartsWith
+            var startsWithResult = Context.Scan<Employee>(e => e.Name.StartsWith("B")).ToList();
+            Assert.IsTrue(startsWithResult.Any(e => e.Name == "Bob"));
+
+
+            // Between
+            var betweenResult = Context.Scan<Employee>(e => e.Age.Between(40, 50)).ToList();
+            Assert.AreEqual(3, betweenResult.Count);
+            Assert.IsTrue(betweenResult.All(e => e.Age>=40 && e.Age<=50));
+
+
+            // String.Contains
+            var stringContainsResult = Context.Scan<Employee>(e => e.Name.Contains("o")).ToList();
+            Assert.IsTrue(stringContainsResult.Any(e => e.Name == "Bob" || e.Name == "Rob" || e.Name == "Cob"));
+
+
+            var nullCheckResult = Context.Scan<Employee>(e => e.MiddleName.AttributeExists()).ToList();
+            Assert.IsTrue(nullCheckResult.Count == 1);
+
+            var nullResult = Context.Scan<Employee>(e => e.MiddleName.AttributeNotExists()).ToList();
+            Assert.IsTrue(nullResult.Count == 3);
 
         }
 
