@@ -558,9 +558,81 @@ namespace AWSSDK_DotNet.IntegrationTests.Tests.DynamoDB
             Assert.AreEqual(employee.Age, storedEmployee.Age);
         }
 
-        /// <summary>
-        /// Tests that the DynamoDB operations can retrieve <see cref="DateTime"/> attributes in UTC and local timezone using the <see cref="DynamoDBOperationConfig"/>
-        /// </summary>
+        [TestMethod]
+        [TestCategory("DynamoDBv2")]
+        public void TestContext_Expression_NestedPaths()
+        {
+            TableCache.Clear();
+            CleanupTables();
+            TableCache.Clear();
+
+            var product1 = new Product
+            {
+                Id = 1,
+                Name = "Widget",
+                CompanyInfo = new CompanyInfo
+                {
+                    Name = "Acme",
+                    Founded = new DateTime(2000, 1, 1),
+                    AllProducts = new List<Product>
+            {
+                new Product { Id = 2, Name = "Gadget" }
+            },
+                    FeaturedBrands = new[] { "Acme", "Contoso" }
+                },
+                Price = 100
+            };
+
+            var product2 = new Product
+            {
+                Id = 3,
+                Name = "Thing",
+                CompanyInfo = new CompanyInfo
+                {
+                    Name = "Contoso",
+                    Founded = new DateTime(2010, 5, 5),
+                    AllProducts = new List<Product>
+            {
+                new Product { Id = 4, Name = "Device" }
+            },
+                    FeaturedBrands = new[] { "Contoso" }
+                },
+                Price = 200
+            };
+
+            Context.Save(product1);
+            Context.Save(product2);
+
+            // 1. Filter on a nested property (CompanyInfo.Name)
+            var byCompanyName = Context.Scan<Product>(p => p.CompanyInfo.Name == "Acme").ToList();
+            Assert.AreEqual(1, byCompanyName.Count);
+            Assert.AreEqual("Widget", byCompanyName[0].Name);
+
+            // 2. Filter on a nested DateTime property - exception
+            //var byFoundedYear = Context.Scan<Product>(p => p.CompanyInfo.Founded == new DateTime(2010, 5, 5)).ToList();
+
+
+            // 4. Filter on a nested array property (FeaturedBrands contains "Acme")
+            var byFeaturedBrand = Context.Scan<Product>(
+                p => p.CompanyInfo.FeaturedBrands.Contains("Acme")).ToList();
+            Assert.AreEqual(1, byFeaturedBrand.Count);
+            Assert.AreEqual("Widget", byFeaturedBrand[0].Name);
+
+            // 5. Filter on a double-nested property (AllProducts[0].Name == "Device")
+            var byDoubleNested = Context.Scan<Product>(
+                p => p.CompanyInfo.AllProducts.First().Name == "Device").ToList();
+            Assert.AreEqual(1, byDoubleNested.Count);
+            Assert.AreEqual("Thing", byDoubleNested[0].Name);
+
+            var byDoubleNested1 = Context.Scan<Product>(
+                p => p.CompanyInfo.AllProducts[0].Name == "Device").ToList();
+            Assert.AreEqual(1, byDoubleNested1.Count);
+            Assert.AreEqual("Thing", byDoubleNested1[0].Name);
+
+           
+        }
+
+
         [TestMethod]
         [TestCategory("DynamoDBv2")]
         public void TestContext_Expression()

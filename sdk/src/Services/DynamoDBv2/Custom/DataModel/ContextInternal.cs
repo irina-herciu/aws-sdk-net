@@ -1205,9 +1205,8 @@ namespace Amazon.DynamoDBv2.DataModel
             return node;
         }
 
-        private static ExpressionNode HandleBinaryComparison(BinaryExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        private ExpressionNode HandleBinaryComparison(BinaryExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
-            //TODO: Handle more complex expressions, like nested properties or method calls
             var member = GetMember(expr.Left) ?? GetMember(expr.Right);
             var constant = GetConstant(expr.Left) ?? GetConstant(expr.Right);
 
@@ -1228,41 +1227,29 @@ namespace Amazon.DynamoDBv2.DataModel
                 }
             };
 
-            SetExpressionNodeAttributes(storageConfig, member, constant, node);
+            SetExpressionNodeAttributes(storageConfig, member, constant, node, flatConfig);
 
             return node;
         }
 
-        private static ExpressionNode HandleMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        private ExpressionNode HandleMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             // Handle method calls like Equals, Between, In, AttributeExists, AttributeNotExists, AttributeType, BeginsWith, Contains
-            switch (expr.Method.Name)
+            return expr.Method.Name switch
             {
-                case "Equals":
-                    return HandleEqualsMethodCall(expr, storageConfig, flatConfig);
-                case "Contains":
-                    return HandleContainsMethodCall(expr, storageConfig, flatConfig);
-                case "StartsWith":
-                    return HandleStartsWithMethodCall(expr, storageConfig, flatConfig);
-                case "In":
-                    return HandleInMethodCall(expr, storageConfig, flatConfig);
-                case "Between":
-                    return HandleBetweenMethodCall(expr, storageConfig, flatConfig);
-                case "AttributeExists":
-                    return HandleExistsMethodCall(expr, storageConfig, flatConfig);
-                case "IsNull":
-                case "AttributeNotExists":
-                    return HandleIsNullMethodCall(expr, storageConfig, flatConfig);
-                case "AttributeType":
-                    return HandleAttributeTypeMethodCall(expr, storageConfig, flatConfig);
-                default:
-                    throw new NotSupportedException($"Unsupported method call: {expr.Method.Name}");
-
-            }
-
+                "Equals" => HandleEqualsMethodCall(expr, storageConfig, flatConfig),
+                "Contains" => HandleContainsMethodCall(expr, storageConfig, flatConfig),
+                "StartsWith" => HandleStartsWithMethodCall(expr, storageConfig, flatConfig),
+                "In" => HandleInMethodCall(expr, storageConfig, flatConfig),
+                "Between" => HandleBetweenMethodCall(expr, storageConfig, flatConfig),
+                "AttributeExists" => HandleExistsMethodCall(expr, storageConfig, flatConfig),
+                "IsNull" or "AttributeNotExists" => HandleIsNullMethodCall(expr, storageConfig, flatConfig),
+                "AttributeType" => HandleAttributeTypeMethodCall(expr, storageConfig, flatConfig),
+                _ => throw new NotSupportedException($"Unsupported method call: {expr.Method.Name}")
+            };
         }
 
-        private static ExpressionNode HandleAttributeTypeMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        private ExpressionNode HandleAttributeTypeMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             var node = new ExpressionNode
             {
@@ -1275,7 +1262,7 @@ namespace Amazon.DynamoDBv2.DataModel
                 var typeExpr = expr.Arguments[1] as ConstantExpression;
                 if (memberObj != null && typeExpr != null)
                 {
-                    SetExpressionNodeAttributes(storageConfig, memberObj, typeExpr, node);
+                    SetExpressionNodeAttributes(storageConfig, memberObj, typeExpr, node, flatConfig);
                 }
                 else
                 {
@@ -1289,7 +1276,7 @@ namespace Amazon.DynamoDBv2.DataModel
             return node;
         }
 
-        private static ExpressionNode HandleIsNullMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        private ExpressionNode HandleIsNullMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             var node = new ExpressionNode {
                 FormatedExpression = "attribute_not_exists (#c)"
@@ -1300,7 +1287,7 @@ namespace Amazon.DynamoDBv2.DataModel
                 var collectionExpr = expr.Arguments[0] as MemberExpression;
                 if (collectionExpr != null)
                 {
-                    SetExpressionNameNode(storageConfig, collectionExpr, node);
+                    SetExpressionNameNode(storageConfig, collectionExpr, node, flatConfig);
                 }
                 else
                 {
@@ -1315,7 +1302,7 @@ namespace Amazon.DynamoDBv2.DataModel
             return node;
         }
 
-        private static ExpressionNode HandleExistsMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        private ExpressionNode HandleExistsMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             var node = new ExpressionNode
             {
@@ -1327,7 +1314,7 @@ namespace Amazon.DynamoDBv2.DataModel
                 var collectionExpr = expr.Arguments[0] as MemberExpression;
                 if (collectionExpr != null)
                 {
-                    SetExpressionNameNode(storageConfig, collectionExpr, node);
+                    SetExpressionNameNode(storageConfig, collectionExpr, node, flatConfig);
                 }
                 else
                 {
@@ -1338,7 +1325,7 @@ namespace Amazon.DynamoDBv2.DataModel
             return node;
         }
 
-        private static ExpressionNode HandleInMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        private ExpressionNode HandleInMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             var node = new ExpressionNode
             {
@@ -1347,7 +1334,7 @@ namespace Amazon.DynamoDBv2.DataModel
 
             if (expr.Object is MemberExpression memberObj && expr.Arguments[0] is NewArrayExpression arrayExpr)
             {
-                SetExpressionNameNode(storageConfig, memberObj, node);
+                SetExpressionNameNode(storageConfig, memberObj, node, flatConfig);
 
                 foreach (var arg in arrayExpr.Expressions)
                 {
@@ -1371,7 +1358,7 @@ namespace Amazon.DynamoDBv2.DataModel
             return node;
         }
 
-        private static ExpressionNode HandleBetweenMethodCall(MethodCallExpression expr,
+        private ExpressionNode HandleBetweenMethodCall(MethodCallExpression expr,
             ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             var node = new ExpressionNode
@@ -1388,7 +1375,7 @@ namespace Amazon.DynamoDBv2.DataModel
 
                 if (collectionExpr != null && constExprLeft != null && constExprRight != null)
                 {
-                    SetExpressionNameNode(storageConfig, collectionExpr, node);
+                    SetExpressionNameNode(storageConfig, collectionExpr, node,flatConfig);
                     SetExpressionValueNode(constExprLeft, node);
                     SetExpressionValueNode(constExprRight, node);
                 }
@@ -1401,7 +1388,7 @@ namespace Amazon.DynamoDBv2.DataModel
             return node;
         }
 
-        private static ExpressionNode HandleStartsWithMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        private  ExpressionNode HandleStartsWithMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             var node = new ExpressionNode
             {
@@ -1409,7 +1396,7 @@ namespace Amazon.DynamoDBv2.DataModel
             };
             if (expr.Object is MemberExpression memberObj && expr.Arguments[0] is ConstantExpression argConst)
             {
-                SetExpressionNodeAttributes(storageConfig, memberObj, argConst, node);
+                SetExpressionNodeAttributes(storageConfig, memberObj, argConst, node,flatConfig);
             }
             else
             {
@@ -1419,7 +1406,7 @@ namespace Amazon.DynamoDBv2.DataModel
             return node;
         }
 
-        private static ExpressionNode HandleContainsMethodCall(MethodCallExpression expr,
+        private ExpressionNode HandleContainsMethodCall(MethodCallExpression expr,
             ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             var node = new ExpressionNode
@@ -1428,7 +1415,7 @@ namespace Amazon.DynamoDBv2.DataModel
             };
             if (expr.Object is MemberExpression memberObj && expr.Arguments[0] is ConstantExpression argConst)
             {
-                SetExpressionNodeAttributes(storageConfig, memberObj, argConst, node);
+                SetExpressionNodeAttributes(storageConfig, memberObj, argConst, node,flatConfig);
             }
             else if (expr.Arguments.Count == 2 && expr.Object == null)
             {
@@ -1437,7 +1424,7 @@ namespace Amazon.DynamoDBv2.DataModel
 
                 if (collectionExpr != null && constExpr != null)
                 {
-                    SetExpressionNodeAttributes(storageConfig, collectionExpr, constExpr, node);
+                    SetExpressionNodeAttributes(storageConfig, collectionExpr, constExpr, node,flatConfig);
                 }
                 else
                 {
@@ -1454,7 +1441,7 @@ namespace Amazon.DynamoDBv2.DataModel
             return node;
         }
 
-        private static ExpressionNode HandleEqualsMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
+        private ExpressionNode HandleEqualsMethodCall(MethodCallExpression expr, ItemStorageConfig storageConfig, DynamoDBFlatConfig flatConfig)
         {
             var node = new ExpressionNode
             {
@@ -1465,7 +1452,7 @@ namespace Amazon.DynamoDBv2.DataModel
                 expr.Arguments[0] is ConstantExpression constant &&
                 constant.Value == null)
             {
-                SetExpressionNodeAttributes(storageConfig, member, constant, node);
+                SetExpressionNodeAttributes(storageConfig, member, constant, node, flatConfig);
                 return node;
             }
             else if (expr.Arguments.Count == 2 && expr.Object == null)
@@ -1474,7 +1461,7 @@ namespace Amazon.DynamoDBv2.DataModel
                 var argConst = GetConstant(expr.Arguments[1]) ?? GetConstant(expr.Arguments[0]);
                 if (memberObj != null && argConst != null)
                 {
-                    SetExpressionNodeAttributes(storageConfig, memberObj, argConst, node);
+                    SetExpressionNodeAttributes(storageConfig, memberObj, argConst, node, flatConfig);
                     return node;
                 }
             }
@@ -1482,10 +1469,10 @@ namespace Amazon.DynamoDBv2.DataModel
             throw new NotSupportedException("Expected MemberExpression with ConstantExpression as argument for Equals method call.");
         }
 
-        private static void SetExpressionNodeAttributes(ItemStorageConfig storageConfig, MemberExpression memberObj,
-            ConstantExpression argConst, ExpressionNode node)
+        private void SetExpressionNodeAttributes(ItemStorageConfig storageConfig, MemberExpression memberObj,
+            ConstantExpression argConst, ExpressionNode node, DynamoDBFlatConfig flatConfig)
         {
-            SetExpressionNameNode(storageConfig, memberObj, node);
+            SetExpressionNameNode(storageConfig, memberObj, node, flatConfig);
 
             SetExpressionValueNode(argConst, node);
         }
@@ -1503,16 +1490,105 @@ namespace Amazon.DynamoDBv2.DataModel
             node.Children.Enqueue(valuesNode);
         }
 
-        private static void SetExpressionNameNode(ItemStorageConfig storageConfig, MemberExpression memberObj,
-            ExpressionNode node)
+        private void ResolveNestedPropertyStorage(StorageConfig rootConfig, DynamoDBFlatConfig flatConfig,
+            IList<string> path, Queue<string> namesNodeNames)
         {
-            PropertyStorage propertyStorage = storageConfig.BaseTypeStorageConfig.GetPropertyStorage(memberObj.Member.Name);
-            //handle arrays/nested
+            StorageConfig currentConfig = rootConfig;
+
+            for (int i = 0; i < path.Count; i++)
+            {
+                var propertyStorage = currentConfig.GetPropertyStorage(path[i]);
+                if (propertyStorage == null)
+                    throw new InvalidOperationException($"Property '{path[i]}' not found in storage config.");
+                // If the property is ignored, throw an exception
+                if (propertyStorage.IsIgnored)
+                {
+                    throw new InvalidOperationException($"Property '{path[i]}' is marked as ignored and cannot be used in a filter expression.");
+                }
+                namesNodeNames.Enqueue(propertyStorage.AttributeName);
+                // If not the last segment, descend into the nested StorageConfig
+                if (i >= path.Count - 1) continue;
+
+                // Only descend if the property is a complex type (not primitive/string)
+                var propertyType = propertyStorage.MemberType;
+                if (Utils.IsPrimitive(propertyType))
+                    throw new InvalidOperationException($"Property '{path[i]}' is not a complex type.");
+                
+                Type elementType = null;
+
+                if (propertyType.IsArray)
+                {
+                    elementType = propertyType.GetElementType();
+                }
+                else if (Utils.ImplementsInterface(propertyType, typeof(ICollection<>)) && propertyType != typeof(string))
+                {
+                    elementType = Utils.GetElementType(propertyType);
+                }
+
+                elementType ??= propertyType;
+                //handle lists
+                // Get the StorageConfig for the nested type
+                ItemStorageConfig config = StorageConfigCache.GetConfig(elementType, flatConfig);
+                currentConfig = config.BaseTypeStorageConfig;
+            }
+        }
+
+
+        private void SetExpressionNameNode(ItemStorageConfig storageConfig, MemberExpression memberObj,
+            ExpressionNode node, DynamoDBFlatConfig flatConfig)
+        {
+            var path = new List<string>();
+            var fmtNames = new List<string>();
+            Expression expr = memberObj;
+
+            var index = -1;
+            while (expr != null)
+            {
+                switch (expr)
+                {
+                    case MemberExpression memberExpr:
+                        path.Insert(0, memberExpr.Member.Name);
+                        if (index != -1)
+                        {
+                            fmtNames.Insert(0, $"#n[{index}]");
+                        }
+                        else
+                        {
+                            fmtNames.Insert(0, "#n");
+                        }
+                        index = -1; // Reset index for next member
+                        expr = memberExpr.Expression;
+                        break;
+                    case MethodCallExpression methodCall:
+                        // Handle .First() and .FirstOrDefault() as index 0
+                        if (methodCall.Method.Name == "First" || methodCall.Method.Name == "FirstOrDefault")
+                        {
+                            expr = methodCall.Arguments.Count > 0 ? methodCall.Arguments[0] : methodCall.Object;
+                            index = 0;
+                        }
+                        // Handle indexer: .AllProducts[0]
+                        else if (methodCall.Method.Name == "get_Item")
+                        {
+                            expr = methodCall.Object;
+                            var indexExpression = GetConstant(methodCall.Arguments[0]);
+                            index = (int)(indexExpression !=null ? indexExpression.Value : -1);
+                        }
+                        else
+                        {
+                            throw new NotSupportedException($"Method {methodCall.Method.Name} is not supported in property path.");
+                        }
+                        break;
+                    default:
+                        expr = null;
+                        break;
+                }
+            }
             var namesNode = new ExpressionNode()
             {
-                FormatedExpression = $"#n"
+                FormatedExpression = string.Join(".", fmtNames)
             };
-            namesNode.Names.Enqueue(propertyStorage.AttributeName);
+
+            ResolveNestedPropertyStorage(storageConfig.BaseTypeStorageConfig, flatConfig, path, namesNode.Names);
             node.Children.Enqueue(namesNode);
         }
 
@@ -1531,8 +1607,21 @@ namespace Amazon.DynamoDBv2.DataModel
 
         private static ConstantExpression GetConstant(Expression expr)
         {
-            return expr as ConstantExpression ?? (expr is UnaryExpression ue
-                ? ue.Operand as ConstantExpression : null);
+            var constant = expr as ConstantExpression;
+            if (constant != null)
+                return constant;
+            // If the expression is a UnaryExpression, check its Operand
+            var unary = expr as UnaryExpression;
+            if (unary != null)
+            {
+                return unary.Operand as ConstantExpression;
+            }
+            var newexp= expr as NewExpression;
+            if (newexp != null)
+            {
+                throw new NotSupportedException($"Unsupported expression type {expr.Type}");
+            }
+            return null;
         }
 
         private static DynamoDBEntry ToAttributeValue(object value)
